@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-card-santri, #printable-card-santri *,
+  #printable-certificate, #printable-certificate *,
+  #printable-rapor, #printable-rapor *,
+  #printable-bulk-cards, #printable-bulk-cards *,
+  #printable-single-qr-badge, #printable-single-qr-badge *,
+  #printable-bulk-qr-sheet, #printable-bulk-qr-sheet * {
+    visibility: visible;
+  }
+  #printable-card-santri, #printable-single-qr-badge {
+    position: absolute;
+    left: 50%;
+    top: 15%;
+    transform: translateX(-50%);
+    box-shadow: none !important;
+    border: 2px solid #eab308 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #printable-certificate, #printable-rapor {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #printable-bulk-cards {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    padding: 10px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #printable-bulk-qr-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .bulk-card-item, .bulk-qr-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

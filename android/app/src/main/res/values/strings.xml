@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RTQ Cendekia BAZNAS</string>
+    <string name="title_activity_main">RTQ Cendekia BAZNAS</string>
+    <string name="package_name">com.rtqcendekia.app</string>
+    <string name="custom_url_scheme">com.rtqcendekia.app</string>
+</resources>

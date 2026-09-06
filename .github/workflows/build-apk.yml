@@ -2,7 +2,9 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -10,55 +12,60 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Ambil source code
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # 2. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
 
-      - name: Set up JDK 17
+      # 3. Setup Java
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: temurin
+          cache: gradle
 
+      # 4. Setup Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      # 5. Install dependencies
       - name: Install Node Dependencies
-        run: npm ci || npm install
+        run: npm ci
 
+      # 6. Build web
       - name: Build Web Production Assets
         run: npm run build
 
+      # 7. Sync Capacitor
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      # 8. Berikan permission Gradle
       - name: Make Gradle Executable
         run: chmod +x android/gradlew
 
-      - name: Build Release APK
-        run: |
-          cd android
-          ./gradlew assembleRelease
-          ./gradlew assembleDebug
+      # 9. Build Debug APK
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
 
-      - name: Build Android App Bundle (AAB for Play Store)
+      # 10. Rename APK agar mudah dikenali
+      - name: Rename APK
         run: |
-          cd android
-          ./gradlew bundleRelease || true
+          mkdir -p apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk/app-debug-installable.apk
 
-      - name: Upload Release APK Artifact
+      # 11. Upload APK
+      - name: Upload Installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
-
-      - name: Upload Debug APK Artifact (Installable directly without signing)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: android-apk-installable
+          path: apk/app-debug-installable.apk
+          retention-days: 30

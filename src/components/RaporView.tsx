@@ -16,7 +16,10 @@ import {
   Smartphone,
   Award,
   BookOpen,
-  ShieldCheck
+  ShieldCheck,
+  Lock,
+  Eye,
+  Settings
 } from 'lucide-react';
 import { generateAndDownloadRaporPDF, shareRaporPDF } from '../utils/raporPdfGenerator';
 import { getRaporGuruQRPayload, getRaporKepalaQRPayload } from '../utils/qrUtils';
@@ -32,6 +35,8 @@ export const RaporView: React.FC = () => {
     ibadahList, 
     absensiList,
     appLogo,
+    appSettings,
+    setActiveMenu,
     showToast 
   } = useApp();
 
@@ -52,6 +57,39 @@ export const RaporView: React.FC = () => {
       setSelectedNIS(waliSantri.NIS);
     }
   }, [waliSantri]);
+
+  // If Wali Santri is logged in and Rapor publication is disabled by Admin
+  if (isWali && (!appSettings.publikasiRapor || !appSettings.publikasiRaporTahfidz)) {
+    return (
+      <div id="section-rapor-locked" className="p-8 sm:p-12 bg-white rounded-3xl text-center border border-amber-200 shadow-sm space-y-5 animate-in fade-in duration-200">
+        <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+          <Lock className="w-8 h-8" />
+        </div>
+        <div className="max-w-md mx-auto space-y-2">
+          <span className="px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-extrabold border border-amber-300">
+            Publikasi Rapor Belum Dibuka
+          </span>
+          <h3 className="text-xl font-black text-gray-900 pt-1">
+            Rapor Santri Belum Dipublikasikan
+          </h3>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            {appSettings.pesanRaporTerkunci || 'Laporan hasil belajar / Rapor santri (Tahfidz & Diniyyah) sedang dalam proses evaluasi dan belum dipublikasikan untuk periode ini.'}
+          </p>
+          <p className="text-[11px] text-gray-400 pt-2">
+            Silakan pantau berkala pengumuman resmi atau hubungi pihak asatidz RTQ Cendikia BAZNAS.
+          </p>
+        </div>
+        <div className="pt-3">
+          <button
+            onClick={() => setActiveMenu('dashboard')}
+            className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition cursor-pointer"
+          >
+            Kembali ke Portal Utama
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const santri = santriList.find(s => s.NIS === selectedNIS) || waliSantri || santriList[0];
 
@@ -154,6 +192,48 @@ export const RaporView: React.FC = () => {
   return (
     <div id="section-rapor-view" className="space-y-5 animate-in fade-in duration-200">
       
+      {/* Admin Publication Status Notice */}
+      {!isWali && (
+        <div className={`p-3.5 px-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
+          appSettings.publikasiRapor && appSettings.publikasiRaporTahfidz
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+            : 'bg-amber-50 border-amber-300 text-amber-950'
+        }`}>
+          <div className="flex items-center space-x-2.5">
+            {appSettings.publikasiRapor && appSettings.publikasiRaporTahfidz ? (
+              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                <Lock className="w-3.5 h-3.5" />
+              </div>
+            )}
+            <div>
+              <span className="font-bold">Status Publikasi Rapor ke Wali Santri: </span>
+              {appSettings.publikasiRapor && appSettings.publikasiRaporTahfidz ? (
+                <span className="font-extrabold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                  Aktif (Wali Santri Dapat Melihat & Mengunduh)
+                </span>
+              ) : (
+                <span className="font-extrabold text-amber-800 bg-amber-200/80 px-2 py-0.5 rounded-md">
+                  Terkunci / Belum Dipublikasikan ke Wali Santri
+                </span>
+              )}
+            </div>
+          </div>
+          {currentUser?.role === 'Admin' && (
+            <button
+              onClick={() => setActiveMenu('pengaturan')}
+              className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 shadow-2xs flex items-center gap-1.5 cursor-pointer flex-shrink-0"
+            >
+              <Settings className="w-3.5 h-3.5 text-gray-500" />
+              <span>Ubah di Pengaturan</span>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Top Filter and Select */}
       <div className="bg-white p-5 rounded-3xl border border-gray-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row gap-3 flex-1">

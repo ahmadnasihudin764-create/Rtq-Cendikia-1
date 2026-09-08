@@ -46,7 +46,10 @@ import {
   BarChart3,
   Wallet,
   ArrowLeft,
-  Home
+  Home,
+  KeyRound,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { PerizinanRecord } from '../types';
 import { ProfilSantriView } from './ProfilSantriView';
@@ -65,6 +68,7 @@ export const WaliSantriPortalView: React.FC = () => {
     getSantriForWali, 
     activeMenu,
     setActiveMenu,
+    appSettings,
     tahfidzList = [], 
     tahsinList = [], 
     diniyyahList = [],
@@ -80,22 +84,43 @@ export const WaliSantriPortalView: React.FC = () => {
     addPerizinan, 
     setSelectedSantriForCard,
     setSelectedPrestasiForCert,
+    changePassword,
+    setIsGantiPasswordOpen,
     showToast
   } = useApp();
+
+  // Publication Checks
+  const isNilaiTahfidzPublished = appSettings.publikasiNilai && appSettings.publikasiNilaiTahfidz;
+  const isNilaiTahsinPublished = appSettings.publikasiNilai && appSettings.publikasiNilaiTahsin;
+  const isNilaiDiniyyahPublished = appSettings.publikasiNilai && appSettings.publikasiNilaiDiniyyah;
+  const isRaporTahfidzPublished = appSettings.publikasiRapor && appSettings.publikasiRaporTahfidz;
+  const isRaporDiniyyahPublished = appSettings.publikasiRapor && appSettings.publikasiRaporDiniyyah;
+  const isRaporOverallPublished = appSettings.publikasiRapor && (appSettings.publikasiRaporTahfidz || appSettings.publikasiRaporDiniyyah);
 
   const [isAjukanIzinOpen, setIsAjukanIzinOpen] = useState(false);
   const [tahfidzSearch, setTahfidzSearch] = useState('');
   const [tahsinSearch, setTahsinSearch] = useState('');
   const [copiedRekening, setCopiedRekening] = useState(false);
+
+  // In-portal password change state
+  const [oldPasswordInput, setOldPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const [showOldPass, setShowOldPass] = useState(false);
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
+  const [passError, setPassError] = useState('');
+  const [passSuccess, setPassSuccess] = useState('');
+  const [isSubmittingPass, setIsSubmittingPass] = useState(false);
   const tabsContainerRef = useRef<HTMLDivElement>(null);
 
   const handleCopyRekening = () => {
-    const rekeningNumber = '7220983708';
+    const rekeningNumber = '012901044008503';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(rekeningNumber)
         .then(() => {
           setCopiedRekening(true);
-          showToast('Nomor rekening BSI berhasil disalin.', 'success');
+          showToast('Nomor rekening BRI berhasil disalin.', 'success');
           setTimeout(() => setCopiedRekening(false), 3000);
         })
         .catch(() => {
@@ -117,7 +142,7 @@ export const WaliSantriPortalView: React.FC = () => {
     try {
       document.execCommand('copy');
       setCopiedRekening(true);
-      showToast('Nomor rekening BSI berhasil disalin.', 'success');
+      showToast('Nomor rekening BRI berhasil disalin.', 'success');
       setTimeout(() => setCopiedRekening(false), 3000);
     } catch {
       showToast('Gagal menyalin nomor rekening.', 'error');
@@ -129,8 +154,8 @@ export const WaliSantriPortalView: React.FC = () => {
     const santriName = santri?.Nama_Lengkap || 'Santri';
     const santriNIS = santri?.NIS || '-';
     const waliName = santri?.Nama_Ayah || santri?.Nama_Ibu || currentUser?.nama || 'Wali Santri';
-    const message = `Assalamu'alaikum Warahmatullahi Wabarakatuh Bu Sri Siti Khafsoh,\n\nSaya ingin konfirmasi pembayaran SPP / Infaq RTQ Cendikia BAZNAS:\n- Nama Santri: ${santriName}\n- NIS: ${santriNIS}\n- Nama Wali: ${waliName}\n\nMohon konfirmasi jika dana sudah masuk ke rekening BSI (7220983708). Bukti transfer terlampir.\n\nTerima kasih.`;
-    const waUrl = `https://wa.me/6285388959293?text=${encodeURIComponent(message)}`;
+    const message = `Assalamu'alaikum Warahmatullahi Wabarakatuh Pak Suwasno,\n\nSaya ingin konfirmasi pembayaran SPP / Infaq RTQ Cendikia BAZNAS:\n- Nama Santri: ${santriName}\n- NIS: ${santriNIS}\n- Nama Wali: ${waliName}\n\nMohon konfirmasi jika dana sudah masuk ke rekening BRI (012901044008503). Bukti transfer terlampir.\n\nTerima kasih.`;
+    const waUrl = `https://wa.me/6281367009740?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -160,6 +185,7 @@ export const WaliSantriPortalView: React.FC = () => {
     if (activeMenu === 'pengumuman') return 'pengumuman';
     if (activeMenu === 'foto-kegiatan' || activeMenu === 'foto') return 'foto-kegiatan';
     if (activeMenu === 'media-rtq' || activeMenu === 'media') return 'media-rtq';
+    if (activeMenu === 'ganti-password' || activeMenu === 'password') return 'ganti-password';
     return 'dashboard';
   })();
 
@@ -262,6 +288,7 @@ export const WaliSantriPortalView: React.FC = () => {
     { id: 'pengumuman', label: `Pengumuman (${pengumumanList.length})`, icon: Megaphone },
     { id: 'foto-kegiatan', label: `Foto Kegiatan (${fotoKegiatanList.length})`, icon: Images },
     { id: 'media-rtq', label: 'Media RTQ', icon: Share2 },
+    { id: 'ganti-password', label: 'Ganti Kata Sandi', icon: KeyRound, isHighlight: true },
   ];
 
   return (
@@ -334,6 +361,13 @@ export const WaliSantriPortalView: React.FC = () => {
             >
               <QrCode className="w-4 h-4 text-yellow-300" />
               <span>Kartu & QR</span>
+            </button>
+            <button
+              onClick={() => setActiveMenu('ganti-password')}
+              className="flex-1 sm:flex-none px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-2 cursor-pointer"
+            >
+              <KeyRound className="w-4 h-4 text-emerald-950" />
+              <span>Ganti Sandi</span>
             </button>
             <button
               onClick={() => setIsAjukanIzinOpen(true)}
@@ -418,22 +452,39 @@ export const WaliSantriPortalView: React.FC = () => {
               </div>
               <div>
                 <span className="text-[10px] font-bold text-yellow-300 uppercase tracking-widest bg-yellow-400/20 px-2 py-0.5 rounded-md">
-                  DOKUMEN RESMI TAHFIDZ
+                  DOKUMEN RESMI TAHFIDZ & DINIYYAH
                 </span>
                 <h4 className="text-base font-bold text-white mt-0.5">
                   Rapor Evaluasi & Capaian Santri
                 </h4>
                 <p className="text-xs text-emerald-200">
-                  Rapor resmi ananda <strong className="text-yellow-300">{santri.Nama_Lengkap}</strong> siap diunduh dalam format PDF resmi BAZNAS.
+                  {isRaporOverallPublished ? (
+                    <>Rapor resmi ananda <strong className="text-yellow-300">{santri.Nama_Lengkap}</strong> siap diunduh dalam format PDF resmi BAZNAS.</>
+                  ) : (
+                    <>Rapor semester ananda <strong className="text-yellow-300">{santri.Nama_Lengkap}</strong> saat ini sedang proses penyusunan dan verifikasi asatidz.</>
+                  )}
                 </p>
               </div>
             </div>
             <button
               onClick={() => setActiveMenu('rapor')}
-              className="w-full sm:w-auto px-5 py-2.5 bg-yellow-400 hover:bg-yellow-300 text-emerald-950 font-black text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer flex-shrink-0"
+              className={`w-full sm:w-auto px-5 py-2.5 font-black text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer flex-shrink-0 ${
+                isRaporOverallPublished
+                  ? 'bg-yellow-400 hover:bg-yellow-300 text-emerald-950'
+                  : 'bg-emerald-800/90 text-emerald-200 border border-emerald-600/50'
+              }`}
             >
-              <Download className="w-4 h-4 text-emerald-950" />
-              <span>Buka & Download Rapor (PDF)</span>
+              {isRaporOverallPublished ? (
+                <>
+                  <Download className="w-4 h-4 text-emerald-950" />
+                  <span>Buka & Download Rapor (PDF)</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4 text-yellow-400" />
+                  <span>Cek Status Publikasi Rapor</span>
+                </>
+              )}
             </button>
           </div>
 
@@ -473,6 +524,7 @@ export const WaliSantriPortalView: React.FC = () => {
                 { id: 'pengumuman', label: 'Pengumuman', sub: `${pengumumanList.length} Info`, icon: Megaphone, bg: 'from-red-500 to-rose-600', shadow: 'shadow-red-200', text: 'text-white' },
                 { id: 'foto-kegiatan', label: 'Foto Dokumentasi', sub: `${fotoKegiatanList.length} Album`, icon: Images, bg: 'from-emerald-400 to-teal-600', shadow: 'shadow-emerald-200', text: 'text-white' },
                 { id: 'media-rtq', label: 'Media Sosial RTQ', sub: 'FB, YT, IG', icon: Share2, bg: 'from-pink-500 to-rose-600', shadow: 'shadow-pink-200', text: 'text-white' },
+                { id: 'ganti-password', label: 'Ganti Kata Sandi', sub: 'Keamanan Akun', icon: KeyRound, bg: 'from-amber-500 to-yellow-600', shadow: 'shadow-amber-200', text: 'text-emerald-950', badge: 'Sandi' },
               ].map((item) => {
                 const ItemIcon = item.icon;
                 return (
@@ -537,10 +589,18 @@ export const WaliSantriPortalView: React.FC = () => {
                 </div>
               </div>
               <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-emerald-700 transition truncate">
-                {lastTahfidz ? `Surah ${lastTahfidz.Surah}` : 'Juz 30 (Ziyadah)'}
+                {!isNilaiTahfidzPublished ? (
+                  <span className="text-amber-800 font-bold flex items-center gap-1"><Lock className="w-3.5 h-3.5" /> Terkunci</span>
+                ) : (
+                  lastTahfidz ? `Surah ${lastTahfidz.Surah}` : 'Juz 30 (Ziyadah)'
+                )}
               </h4>
               <p className="text-[11px] text-emerald-700 font-medium mt-1">
-                {lastTahfidz ? `Nilai: ${lastTahfidz.Nilai_Rata}` : `Target: ${santri.Target_Juz || '3 Juz'}`}
+                {!isNilaiTahfidzPublished ? (
+                  <span className="text-amber-600 text-[10px]">Belum dipublikasikan</span>
+                ) : (
+                  lastTahfidz ? `Nilai: ${lastTahfidz.Nilai_Rata}` : `Target: ${santri.Target_Juz || '3 Juz'}`
+                )}
               </p>
             </div>
 
@@ -555,10 +615,18 @@ export const WaliSantriPortalView: React.FC = () => {
                 </div>
               </div>
               <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-blue-700 transition truncate">
-                {lastTahsin ? lastTahsin.Jilid_Iqra : "Al-Qur'an / Tajwid"}
+                {!isNilaiTahsinPublished ? (
+                  <span className="text-amber-800 font-bold flex items-center gap-1"><Lock className="w-3.5 h-3.5" /> Terkunci</span>
+                ) : (
+                  lastTahsin ? lastTahsin.Jilid_Iqra : "Al-Qur'an / Tajwid"
+                )}
               </h4>
               <p className="text-[11px] text-blue-700 font-medium mt-1">
-                {lastTahsin ? `Hal: ${lastTahsin.Halaman} (${lastTahsin.Nilai})` : 'Makharijul Huruf'}
+                {!isNilaiTahsinPublished ? (
+                  <span className="text-amber-600 text-[10px]">Belum dipublikasikan</span>
+                ) : (
+                  lastTahsin ? `Hal: ${lastTahsin.Halaman} (${lastTahsin.Nilai})` : 'Makharijul Huruf'
+                )}
               </p>
             </div>
 
@@ -573,10 +641,18 @@ export const WaliSantriPortalView: React.FC = () => {
                 </div>
               </div>
               <h4 className="text-sm font-extrabold text-gray-900 group-hover:text-emerald-700 transition truncate">
-                {lastDiniyyah ? lastDiniyyah.jenjang : 'Kelas Ula'}
+                {!isNilaiDiniyyahPublished ? (
+                  <span className="text-amber-800 font-bold flex items-center gap-1"><Lock className="w-3.5 h-3.5" /> Terkunci</span>
+                ) : (
+                  lastDiniyyah ? lastDiniyyah.jenjang : 'Kelas Ula'
+                )}
               </h4>
               <p className="text-[11px] text-emerald-700 font-medium mt-1">
-                {lastDiniyyah ? `Rata-rata: ${lastDiniyyah.rataRata} (${lastDiniyyah.predikat})` : '4 Mata Pelajaran Kitab'}
+                {!isNilaiDiniyyahPublished ? (
+                  <span className="text-amber-600 text-[10px]">Belum dipublikasikan</span>
+                ) : (
+                  lastDiniyyah ? `Rata-rata: ${lastDiniyyah.rataRata} (${lastDiniyyah.predikat})` : '4 Mata Pelajaran Kitab'
+                )}
               </p>
             </div>
 
@@ -668,7 +744,17 @@ export const WaliSantriPortalView: React.FC = () => {
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
-                {lastTahfidz ? (
+                {!isNilaiTahfidzPublished ? (
+                  <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 space-y-1.5 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                      <Lock className="w-4 h-4 text-amber-700" />
+                      <span>Nilai & Riwayat Setoran Terkunci</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      {appSettings.pesanNilaiTerkunci || 'Nilai setoran tahfidz belum dipublikasikan oleh asatidz untuk periode ini.'}
+                    </p>
+                  </div>
+                ) : lastTahfidz ? (
                   <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-emerald-950">Surah {lastTahfidz.Surah} ({lastTahfidz.Ayat})</span>
@@ -854,6 +940,20 @@ export const WaliSantriPortalView: React.FC = () => {
       {/* TAB 4: TAHFIDZ AL-QUR'AN */}
       {currentTab === 'tahfidz' && (
         <div className="space-y-6 animate-in fade-in duration-200">
+          {!isNilaiTahfidzPublished && (
+            <div className="p-4.5 bg-amber-50 rounded-2xl border border-amber-300 flex items-start space-x-3 text-xs text-amber-950">
+              <div className="w-8 h-8 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-extrabold text-amber-900 text-sm">Nilai Tahfidz Belum Dipublikasikan</h4>
+                <p className="text-amber-800">
+                  {appSettings.pesanNilaiTerkunci || 'Nilai dan evaluasi setoran Tahfidz Al-Qur\'an sedang dalam tahap penilaian asatidz dan belum dipublikasikan untuk periode ini.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -908,21 +1008,27 @@ export const WaliSantriPortalView: React.FC = () => {
                         <td className="p-3 text-gray-600 whitespace-nowrap font-mono text-[11px]">{t.Tanggal}</td>
                         <td className="p-3 font-bold text-gray-900">{t.Juz} / Surah {t.Surah}</td>
                         <td className="p-3 text-gray-700 font-medium">{t.Ayat}</td>
-                        <td className="p-3 text-center font-semibold">{t.Kelancaran_Score}</td>
-                        <td className="p-3 text-center font-semibold">{t.Tajwid_Score}</td>
-                        <td className="p-3 text-center font-semibold">{t.Fashahah_Score}</td>
-                        <td className="p-3 text-center font-extrabold text-emerald-700">{t.Nilai_Rata}</td>
+                        <td className="p-3 text-center font-semibold">{!isNilaiTahfidzPublished ? '-' : t.Kelancaran_Score}</td>
+                        <td className="p-3 text-center font-semibold">{!isNilaiTahfidzPublished ? '-' : t.Tajwid_Score}</td>
+                        <td className="p-3 text-center font-semibold">{!isNilaiTahfidzPublished ? '-' : t.Fashahah_Score}</td>
+                        <td className="p-3 text-center font-extrabold text-emerald-700">{!isNilaiTahfidzPublished ? '-' : t.Nilai_Rata}</td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${
-                            t.Status_Lulus === 'Mumtaz' ? 'bg-emerald-100 text-emerald-800' :
-                            t.Status_Lulus === 'Jayyid Jiddan' ? 'bg-teal-100 text-teal-800' :
-                            t.Status_Lulus === 'Jayyid' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {t.Status_Lulus}
-                          </span>
+                          {!isNilaiTahfidzPublished ? (
+                            <span className="text-amber-800 font-bold text-[10px] bg-amber-100 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                              <Lock className="w-3 h-3" /> Terkunci
+                            </span>
+                          ) : (
+                            <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${
+                              t.Status_Lulus === 'Mumtaz' ? 'bg-emerald-100 text-emerald-800' :
+                              t.Status_Lulus === 'Jayyid Jiddan' ? 'bg-teal-100 text-teal-800' :
+                              t.Status_Lulus === 'Jayyid' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {t.Status_Lulus}
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 text-gray-700 whitespace-nowrap">{t.Pengajar}</td>
-                        <td className="p-3 text-gray-600 max-w-xs">{t.Catatan}</td>
+                        <td className="p-3 text-gray-600 max-w-xs">{!isNilaiTahfidzPublished ? 'Evaluasi asatidz belum dipublikasikan.' : t.Catatan}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -942,6 +1048,20 @@ export const WaliSantriPortalView: React.FC = () => {
       {/* TAB 5: TAHSIN & IQRA' */}
       {currentTab === 'tahsin' && (
         <div className="space-y-6 animate-in fade-in duration-200">
+          {!isNilaiTahsinPublished && (
+            <div className="p-4.5 bg-amber-50 rounded-2xl border border-amber-300 flex items-start space-x-3 text-xs text-amber-950">
+              <div className="w-8 h-8 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-extrabold text-amber-900 text-sm">Nilai Tahsin Belum Dipublikasikan</h4>
+                <p className="text-amber-800">
+                  {appSettings.pesanNilaiTerkunci || 'Nilai dan catatan pembinaan Tahsin sedang dalam tahap evaluasi asatidz dan belum dipublikasikan untuk periode ini.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
@@ -988,17 +1108,23 @@ export const WaliSantriPortalView: React.FC = () => {
                         <td className="p-3 text-gray-600 whitespace-nowrap font-mono text-[11px]">{ts.Tanggal}</td>
                         <td className="p-3 font-bold text-gray-900">{ts.Jilid_Iqra}</td>
                         <td className="p-3 text-gray-700 font-medium">{ts.Halaman}</td>
-                        <td className="p-3 text-center font-bold text-blue-700">{ts.Nilai}</td>
+                        <td className="p-3 text-center font-bold text-blue-700">{!isNilaiTahsinPublished ? '-' : ts.Nilai}</td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${
-                            ts.Status_Kelulusan === 'Lanjut' ? 'bg-emerald-100 text-emerald-800' :
-                            ts.Status_Kelulusan === 'Lulus Jilid' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {ts.Status_Kelulusan}
-                          </span>
+                          {!isNilaiTahsinPublished ? (
+                            <span className="text-amber-800 font-bold text-[10px] bg-amber-100 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                              <Lock className="w-3 h-3" /> Terkunci
+                            </span>
+                          ) : (
+                            <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${
+                              ts.Status_Kelulusan === 'Lanjut' ? 'bg-emerald-100 text-emerald-800' :
+                              ts.Status_Kelulusan === 'Lulus Jilid' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {ts.Status_Kelulusan}
+                            </span>
+                          )}
                         </td>
                         <td className="p-3 text-gray-700 whitespace-nowrap">{ts.Pengajar}</td>
-                        <td className="p-3 text-gray-600 max-w-xs">{ts.Catatan_Evaluasi}</td>
+                        <td className="p-3 text-gray-600 max-w-xs">{!isNilaiTahsinPublished ? 'Catatan evaluasi pembinaan belum dipublikasikan.' : ts.Catatan_Evaluasi}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1118,7 +1244,7 @@ export const WaliSantriPortalView: React.FC = () => {
               {/* Box Rincian Rekening */}
               <div className="bg-emerald-900/90 backdrop-blur-xs p-5 sm:p-6 rounded-2xl border border-emerald-700/80 space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b border-emerald-800/60">
-                  <span className="text-xs font-bold text-yellow-300">Bank Syariah Indonesia (BSI)</span>
+                  <span className="text-xs font-bold text-yellow-300">Bank Rakyat Indonesia (BRI)</span>
                   <span className="text-[10px] uppercase tracking-wider font-semibold text-emerald-200">Rekening Resmi Bendahara</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
@@ -1127,17 +1253,17 @@ export const WaliSantriPortalView: React.FC = () => {
                       Atas Nama (A.N.)
                     </p>
                     <h5 className="text-lg sm:text-xl font-black text-white tracking-wide">
-                      Sri Siti Khafsoh
+                      SUWASNO
                     </h5>
                   </div>
 
                   <div className="sm:text-right space-y-1">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
-                      Nomor Rekening BSI
+                      Nomor Rekening BRI
                     </p>
                     <div className="flex items-center sm:justify-end">
                       <span className="text-xl sm:text-2xl font-black font-mono tracking-wider text-yellow-300 bg-emerald-950/90 px-4 py-2 rounded-xl border border-emerald-700/60 select-all shadow-inner">
-                        7220983708
+                        012901044008503
                       </span>
                     </div>
                   </div>
@@ -1185,7 +1311,7 @@ export const WaliSantriPortalView: React.FC = () => {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between text-[11px] text-emerald-200/90 pt-1 gap-2 border-t border-emerald-800/40">
                   <div className="flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-yellow-300" />
-                    <span>Kontak WhatsApp Bendahara: <strong>Sri Siti Khafsoh (+62 853-8895-9293)</strong></span>
+                    <span>Kontak WhatsApp Bendahara: <strong>Suwasno (+62 813-6700-9740)</strong></span>
                   </div>
                   <p className="text-emerald-300">
                     Kirimkan foto/screenshot bukti transfer setelah melakukan pembayaran.
@@ -1248,10 +1374,10 @@ export const WaliSantriPortalView: React.FC = () => {
             <div className="space-y-1.5 text-xs text-emerald-950">
               <h4 className="font-extrabold text-sm text-emerald-900">Salurkan Infaq & SPP Santri Secara Digital</h4>
               <p className="text-gray-600">
-                Pembayaran dapat disalurkan melalui Rekening Resmi BSI a.n. Sri Siti Khafsoh atau Scan QRIS RTQ Cendikia di loket administrasi Masjid Agung Darussalam.
+                Pembayaran dapat disalurkan melalui Rekening Resmi BRI a.n. SUWASNO atau Scan QRIS RTQ Cendikia di loket administrasi Masjid Agung Darussalam.
               </p>
               <p className="font-semibold pt-1 text-emerald-900">
-                No. Rekening BSI: <strong className="font-mono text-sm text-emerald-800">7220983708</strong> a.n. Sri Siti Khafsoh &bull; Konfirmasi WA: <strong className="font-mono text-emerald-800">+62 853-8895-9293</strong>
+                No. Rekening BRI: <strong className="font-mono text-sm text-emerald-800">012901044008503</strong> a.n. SUWASNO &bull; Konfirmasi WA: <strong className="font-mono text-emerald-800">+62 813-6700-9740</strong>
               </p>
             </div>
             <div className="p-3 bg-white rounded-xl shadow-xs border border-emerald-100 text-center flex-shrink-0">
@@ -1430,6 +1556,198 @@ export const WaliSantriPortalView: React.FC = () => {
       {currentTab === 'media-rtq' && (
         <div className="animate-in fade-in duration-200">
           <MediaRTQView />
+        </div>
+      )}
+
+      {/* TAB: GANTI KATA SANDI (PORTAL WALI SANTRI) */}
+      {currentTab === 'ganti-password' && (
+        <div className="animate-in fade-in duration-200 space-y-6">
+          <div className="bg-white rounded-3xl border border-gray-200/90 p-6 sm:p-8 shadow-xs max-w-2xl mx-auto">
+            <div className="flex items-center space-x-3 pb-5 border-b border-gray-100">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-emerald-950 flex items-center justify-center shadow-md">
+                <KeyRound className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Ganti Kata Sandi Akun Wali Santri</h3>
+                <p className="text-xs text-gray-500">
+                  Perbarui kata sandi login untuk ananda <strong className="text-emerald-800">{santri.Nama_Lengkap}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Account Info Card */}
+            <div className="mt-5 p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Akun Terdaftar</span>
+                <p className="text-sm font-black text-emerald-950">{santri.Nama_Lengkap}</p>
+                <p className="text-xs text-emerald-700">Wali: {santri.Nama_Wali} ({santri.WA_Wali})</p>
+              </div>
+              <div className="text-left sm:text-right">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-white text-emerald-800 border border-emerald-200 shadow-2xs">
+                  <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                  Role: Wali Santri
+                </span>
+                {currentUser?.isDefaultPassword === false && currentUser?.passwordUpdatedAt && (
+                  <p className="text-[10px] text-emerald-600 mt-1">
+                    Terakhir diubah: {new Date(currentUser.passwordUpdatedAt).toLocaleDateString('id-ID')}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Form */}
+            <form 
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setPassError('');
+                setPassSuccess('');
+
+                if (!oldPasswordInput) {
+                  setPassError('Kata sandi saat ini harus diisi.');
+                  return;
+                }
+                if (!newPasswordInput) {
+                  setPassError('Kata sandi baru harus diisi.');
+                  return;
+                }
+                if (newPasswordInput.length < 6) {
+                  setPassError('Kata sandi baru minimal 6 karakter.');
+                  return;
+                }
+                if (newPasswordInput !== confirmPasswordInput) {
+                  setPassError('Konfirmasi kata sandi tidak cocok.');
+                  return;
+                }
+                if (newPasswordInput === oldPasswordInput) {
+                  setPassError('Kata sandi baru tidak boleh sama dengan kata sandi saat ini.');
+                  return;
+                }
+
+                setIsSubmittingPass(true);
+                const result = await changePassword(oldPasswordInput, newPasswordInput);
+                setIsSubmittingPass(false);
+
+                if (result.success) {
+                  setPassSuccess('Kata sandi berhasil diperbarui! Admin telah menerima data perubahan kata sandi ini.');
+                  setOldPasswordInput('');
+                  setNewPasswordInput('');
+                  setConfirmPasswordInput('');
+                } else {
+                  setPassError(result.message || 'Gagal mengubah kata sandi.');
+                }
+              }}
+              className="mt-6 space-y-4"
+            >
+              {passError && (
+                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{passError}</span>
+                </div>
+              )}
+
+              {passSuccess && (
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                  <span className="font-semibold">{passSuccess}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Kata Sandi Saat Ini <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showOldPass ? 'text' : 'password'}
+                    value={oldPasswordInput}
+                    onChange={(e) => setOldPasswordInput(e.target.value)}
+                    placeholder="Masukkan kata sandi lama / awal (default: rtq_cendekia)"
+                    required
+                    className="w-full pl-3.5 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOldPass(!showOldPass)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showOldPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Kata Sandi Baru <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showNewPass ? 'text' : 'password'}
+                    value={newPasswordInput}
+                    onChange={(e) => setNewPasswordInput(e.target.value)}
+                    placeholder="Minimal 6 karakter"
+                    required
+                    className="w-full pl-3.5 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass(!showNewPass)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Ulangi Kata Sandi Baru <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPass ? 'text' : 'password'}
+                    value={confirmPasswordInput}
+                    onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                    placeholder="Ketik ulang kata sandi baru"
+                    required
+                    className="w-full pl-3.5 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-xs outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showConfirmPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sync Info Banner */}
+              <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2.5">
+                <Sparkles className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-relaxed">
+                  <strong>Pemberitahuan Sistem:</strong> Kata sandi baru yang Anda simpan akan tersinkronisasi otomatis dengan sistem pengelola/Admin RTQ Cendikia untuk memudahkan bantuan login dan verifikasi akun jika diperlukan.
+                </p>
+              </div>
+
+              <div className="pt-3 flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveMenu('dashboard')}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-50 cursor-pointer transition"
+                >
+                  Kembali ke Dashboard
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingPass}
+                  className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-md cursor-pointer transition disabled:opacity-60 flex items-center justify-center space-x-2"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>{isSubmittingPass ? 'Menyimpan...' : 'Simpan Kata Sandi'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

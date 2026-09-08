@@ -119,7 +119,7 @@ export const SANTRI_ADDRESSES: SantriAddressData[] = [
     tempatLahir: 'Musi Rawas',
     tanggalLahir: '2018-05-28'
   },
-  // 12. STR012 - Aldo Afri Pranata
+  // 12. STR012 - Aidil Pratama
   {
     desa: 'Tapah',
     kecamatan: 'Muara Kelingi',

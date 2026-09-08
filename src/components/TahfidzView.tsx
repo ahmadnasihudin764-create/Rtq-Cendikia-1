@@ -19,7 +19,9 @@ import {
   ChevronDown,
   ChevronUp,
   User,
-  GraduationCap
+  GraduationCap,
+  Lock,
+  Globe
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -66,13 +68,16 @@ interface PembimbingGroupTahfidz {
 }
 
 export const TahfidzView: React.FC = () => {
-  const { santriList, tahfidzList, addTahfidz, updateTahfidz, deleteTahfidz, currentUser, pengajarList } = useApp();
+  const { santriList, tahfidzList, addTahfidz, updateTahfidz, deleteTahfidz, currentUser, pengajarList, appSettings } = useApp();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPembimbing, setSelectedPembimbing] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  const isNilaiPublished = (appSettings?.publikasiNilai ?? true) && (appSettings?.publikasiNilaiTahfidz ?? true);
+  const isRaporPublished = (appSettings?.publikasiRapor ?? true) && (appSettings?.publikasiRaporTahfidz ?? true);
 
   const [formData, setFormData] = useState<Partial<TahfidzRecord>>({
     Tanggal: new Date().toISOString().split('T')[0],
@@ -395,6 +400,41 @@ export const TahfidzView: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span>Input Setoran Tahfidz</span>
           </button>
+        </div>
+      </div>
+
+      {/* Status Publikasi Wali Santri Banner */}
+      <div className={`p-3.5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs transition ${
+        isNilaiPublished
+          ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+          : 'bg-amber-50/90 border-amber-300 text-amber-950'
+      }`}>
+        <div className="flex items-center space-x-2.5">
+          <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
+            isNilaiPublished ? 'bg-emerald-200/80 text-emerald-800' : 'bg-amber-200 text-amber-800'
+          }`}>
+            {isNilaiPublished ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold">Status Publikasi Wali Santri:</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                isNilaiPublished ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'
+              }`}>
+                {isNilaiPublished ? 'Nilai Dipublikasikan' : 'Nilai Terkunci'}
+              </span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                isRaporPublished ? 'bg-emerald-200 text-emerald-900' : 'bg-gray-200 text-gray-700'
+              }`}>
+                {isRaporPublished ? 'Rapor Terbit' : 'Rapor Belum Terbit'}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-600 mt-0.5">
+              {isNilaiPublished 
+                ? 'Wali Santri dapat melihat rincian skor juz, kelancaran, tajwid, fashahah, dan predikat mutqin pada portal.'
+                : 'Skor rincian dan evaluasi disembunyikan/dikunci dari Wali Santri sesuai setelan Pengaturan Admin.'}
+            </p>
+          </div>
         </div>
       </div>
 

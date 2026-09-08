@@ -9,7 +9,8 @@ import {
   Plus, 
   Filter, 
   CheckCheck,
-  UserCheck
+  UserCheck,
+  Trash2
 } from 'lucide-react';
 import { PerizinanRecord } from '../types';
 
@@ -171,70 +172,97 @@ export const PerizinanView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredList.map((p) => (
-                <tr key={p.id} className="hover:bg-emerald-50/30 transition">
-                  <td className="p-3.5">
-                    <p className="font-bold text-gray-900">{p.namaSantri}</p>
-                    <p className="text-[10px] text-gray-500 font-mono">NIS: {p.NIS}</p>
-                  </td>
-                  <td className="p-3.5">
-                    <p className="font-semibold text-gray-800">{p.tanggalMulai} s/d {p.tanggalSelesai}</p>
-                    <p className="text-[10px] text-gray-400">Diajukan: {p.tanggalPengajuan}</p>
-                  </td>
-                  <td className="p-3.5">
-                    <span className="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-semibold text-[11px]">
-                      {p.jenisIzin}
-                    </span>
-                  </td>
-                  <td className="p-3.5 max-w-xs">
-                    <p className="text-gray-800 line-clamp-2">{p.alasan}</p>
-                    <p className="text-[10px] text-gray-500 mt-0.5">Penjemput: <strong>{p.penjemput || '-'}</strong></p>
-                  </td>
-                  <td className="p-3.5 text-center">
-                    <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
-                      p.status === 'Disetujui' ? 'bg-emerald-100 text-emerald-800' :
-                      p.status === 'Menunggu Persetujuan' ? 'bg-amber-100 text-amber-800' :
-                      p.status === 'Ditolak' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-gray-600 text-[11px]">
-                    {p.disetujuiOleh || '-'}
-                  </td>
-                  <td className="p-3.5 text-center">
-                    <div className="flex items-center justify-center space-x-1.5">
-                      {p.status === 'Menunggu Persetujuan' && (
-                        <>
-                          <button
-                            onClick={() => handleUpdateStatus(p.id, 'Disetujui')}
-                            className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition"
-                            title="Setujui Izin"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(p.id, 'Ditolak')}
-                            className="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 transition"
-                            title="Tolak Izin"
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                      {p.status === 'Disetujui' && (
-                        <button
-                          onClick={() => handleUpdateStatus(p.id, 'Selesai')}
-                          className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[10px] transition"
-                          title="Tandai Santri Sudah Kembali"
-                        >
-                          Tandai Kembali
-                        </button>
-                      )}
+              {filteredList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 px-4 bg-white">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <p className="font-bold text-gray-700 text-sm">Belum Ada Data Perizinan Santri</p>
+                      <p className="text-gray-400 text-xs max-w-sm">
+                        Data perizinan santri saat ini kosong. Permohonan izin dari portal wali santri atau pencatatan baru akan ditampilkan di sini.
+                      </p>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredList.map((p) => (
+                  <tr key={p.id} className="hover:bg-emerald-50/30 transition">
+                    <td className="p-3.5">
+                      <p className="font-bold text-gray-900">{p.namaSantri}</p>
+                      <p className="text-[10px] text-gray-500 font-mono">NIS: {p.NIS}</p>
+                    </td>
+                    <td className="p-3.5">
+                      <p className="font-semibold text-gray-800">{p.tanggalMulai} s/d {p.tanggalSelesai}</p>
+                      <p className="text-[10px] text-gray-400">Diajukan: {p.tanggalPengajuan}</p>
+                    </td>
+                    <td className="p-3.5">
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-semibold text-[11px]">
+                        {p.jenisIzin}
+                      </span>
+                    </td>
+                    <td className="p-3.5 max-w-xs">
+                      <p className="text-gray-800 line-clamp-2">{p.alasan}</p>
+                      <p className="text-[10px] text-gray-500 mt-0.5">Penjemput: <strong>{p.penjemput || '-'}</strong></p>
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                        p.status === 'Disetujui' ? 'bg-emerald-100 text-emerald-800' :
+                        p.status === 'Menunggu Persetujuan' ? 'bg-amber-100 text-amber-800' :
+                        p.status === 'Ditolak' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-gray-600 text-[11px]">
+                      {p.disetujuiOleh || '-'}
+                    </td>
+                    <td className="p-3.5 text-center">
+                      <div className="flex items-center justify-center space-x-1.5">
+                        {p.status === 'Menunggu Persetujuan' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateStatus(p.id, 'Disetujui')}
+                              className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition"
+                              title="Setujui Izin"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(p.id, 'Ditolak')}
+                              className="p-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 transition"
+                              title="Tolak Izin"
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {p.status === 'Disetujui' && (
+                          <button
+                            onClick={() => handleUpdateStatus(p.id, 'Selesai')}
+                            className="px-2 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-[10px] transition"
+                            title="Tandai Santri Sudah Kembali"
+                          >
+                            Tandai Kembali
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Hapus data perizinan santri ${p.namaSantri}?`)) {
+                              deletePerizinan(p.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-600 transition"
+                          title="Hapus Izin"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

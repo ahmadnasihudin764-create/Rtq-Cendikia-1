@@ -57,7 +57,7 @@ export const NotifikasiWAView: React.FC = () => {
       `💳 *Nama Santri:* ${santri?.Nama_Lengkap} (${santri?.NIS})\n` +
       `🏷️ *Kategori:* Infaq Reguler Pengembangan RTQ\n` +
       `💵 *Nominal:* Rp 150.000,-\n` +
-      `🏦 *Rekening Resmi:* BSI No. Rek 7220983708 a.n. Sri Siti Khafsoh\n\n` +
+      `🏦 *Rekening Resmi:* BRI No. Rek 012901044008503 a.n. SUWASNO\n\n` +
       `Bagi yang telah menunaikan, kami ucapkan jazakumullah khairan katsiran atas dukungannya terhadap pendidikan generasi Qur'ani.\n\n` +
       `*Bendahara RTQ Cendikia BAZNAS*`;
   } else {

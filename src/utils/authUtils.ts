@@ -47,6 +47,8 @@ export const DEFAULT_ADMIN_ACCOUNT: UserAccount = {
   username: 'Admin',
   nama: 'Administrator Utama RTQ',
   role: 'Admin',
+  password: 'Admin123',
+  plainPassword: 'Admin123',
   passwordHash: hashPassword('Admin123'),
   email: 'admin@rtqcendikia.sch.id',
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
@@ -67,6 +69,8 @@ export function generateWaliAccounts(santriList: Santri[]): UserAccount[] {
     username: s.Nama_Lengkap,
     nama: s.Nama_Wali, // Nama Wali Santri yang sama persis dengan yang ada di Data Santri
     role: 'Wali Santri' as const,
+    password: 'rtq_cedikia',
+    plainPassword: 'rtq_cedikia',
     passwordHash: defaultWaliHash,
     santriNIS: s.NIS,
     namaSantri: s.Nama_Lengkap,

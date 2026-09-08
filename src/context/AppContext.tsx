@@ -22,7 +22,9 @@ import {
   AppNotification,
   SanguTransaksi,
   BarangKoperasi,
-  SanguItem
+  SanguItem,
+  AppSettings,
+  DEFAULT_APP_SETTINGS
 } from '../types';
 import {
   INITIAL_USERS,
@@ -179,6 +181,10 @@ interface AppContextType {
   deleteUser: (id: string) => void;
   resetUserPassword: (id: string, defaultPassword?: string) => void;
 
+  // App Settings (Publikasi Rapor & Nilai)
+  appSettings: AppSettings;
+  updateAppSettings: (newSettings: Partial<AppSettings>) => void;
+
   // App Logo & Branding (Admin only)
   appLogo: string;
   updateAppLogo: (newLogoUrl: string) => { success: boolean; message: string };
@@ -235,6 +241,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [activeMenu, setActiveMenuState] = useState<string>('dashboard');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const showToast = useCallback((message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      removeToast(id);
+    }, 4000);
+  }, [removeToast]);
 
   // Modal helpers
   const [selectedSantriForCard, setSelectedSantriForCard] = useState<Santri | null>(null);
@@ -474,6 +492,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (initialS) {
         let changed = false;
         const newObj = { ...s };
+        // Sync name, wali, and phone if updated in initial data
+        if (s.Nama_Lengkap !== initialS.Nama_Lengkap || s.Nama_Wali !== initialS.Nama_Wali || s.WA_Wali !== initialS.WA_Wali) {
+          newObj.Nama_Lengkap = initialS.Nama_Lengkap;
+          newObj.Nama_Wali = initialS.Nama_Wali;
+          newObj.WA_Wali = initialS.WA_Wali;
+          newObj.Nama_Panggilan = initialS.Nama_Panggilan || initialS.Nama_Lengkap.split(' ')[0];
+          changed = true;
+        }
         // Sync phone if still placeholder
         if (s.WA_Wali && s.WA_Wali.startsWith('0812345670') && s.WA_Wali !== initialS.WA_Wali) {
           newObj.WA_Wali = initialS.WA_Wali;
@@ -553,21 +579,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [kebersihanList, setKebersihanList] = usePersistedState<KebersihanKesehatanRecord[]>('KEBERSIHAN', INITIAL_KEBERSIHAN);
   const [absensiList, setAbsensiList] = usePersistedState<AbsensiRecord[]>('ABSENSI', INITIAL_ABSENSI);
 
-  // Sync Absensi halaqah to Semua Halaqoh
+  // Sync Absensi halaqah & santri names
   useEffect(() => {
-    if (!absensiList || absensiList.length === 0) return;
+    if (!absensiList || absensiList.length === 0 || !santriList || santriList.length === 0) return;
+    const santriMap = new Map(santriList.map(s => [s.NIS, s]));
     let needsUpdate = false;
     const updated = absensiList.map(a => {
+      const s = santriMap.get(a.NIS);
+      let changed = false;
+      let newName = a.namaSantri;
+      let newHalaqah = a.halaqah;
+
+      if (s && s.Nama_Lengkap !== a.namaSantri) {
+        newName = s.Nama_Lengkap;
+        changed = true;
+      }
       if (a.halaqah !== 'Semua Halaqoh') {
+        newHalaqah = 'Semua Halaqoh';
+        changed = true;
+      }
+
+      if (changed) {
         needsUpdate = true;
-        return { ...a, halaqah: 'Semua Halaqoh' };
+        return { ...a, namaSantri: newName, halaqah: newHalaqah };
       }
       return a;
     });
     if (needsUpdate) {
       setAbsensiList(updated);
     }
-  }, []);
+  }, [santriList]);
   const [akhlakList, setAkhlakList] = usePersistedState<AkhlakRecord[]>('AKHLAK', INITIAL_AKHLAK);
   const [ibadahList, setIbadahList] = usePersistedState<IbadahRecord[]>('IBADAH', INITIAL_IBADAH);
   const [targetList, setTargetList] = usePersistedState<TargetSantri[]>('TARGET', INITIAL_TARGET);
@@ -589,6 +630,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [jadwalList, setJadwalList] = usePersistedState<JadwalKegiatan[]>('JADWAL', INITIAL_JADWAL);
   const [usersList, setUsersList] = usePersistedState<UserAccount[]>('USERS', INITIAL_USERS);
   const [perizinanList, setPerizinanList] = usePersistedState<PerizinanRecord[]>('PERIZINAN', INITIAL_PERIZINAN);
+
+  // Auto clean sample/mock perizinan
+  useEffect(() => {
+    setPerizinanList(prev => {
+      if (!prev || prev.length === 0) return prev;
+      const cleaned = prev.filter(p => !['IZN001', 'IZN002', 'IZN003'].includes(p.id) && !p.id.startsWith('IZN00'));
+      if (cleaned.length !== prev.length) {
+        return cleaned;
+      }
+      return prev;
+    });
+  }, []);
   const [pengumumanList, setPengumumanList] = usePersistedState<PengumumanRecord[]>('PENGUMUMAN', INITIAL_PENGUMUMAN);
 
   // Auto clean sample/mock pengumuman
@@ -638,8 +691,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
   const [diniyyahList, setDiniyyahList] = usePersistedState<DiniyyahRecord[]>('DINIYYAH', INITIAL_DINIYYAH_DATA);
+
+  // Sync Diniyyah names with santriList
+  useEffect(() => {
+    if (!diniyyahList || diniyyahList.length === 0 || !santriList || santriList.length === 0) return;
+    const santriMap = new Map(santriList.map(s => [s.NIS, s]));
+    let needsUpdate = false;
+    const updated = diniyyahList.map(d => {
+      const s = santriMap.get(d.NIS);
+      if (s && s.Nama_Lengkap !== d.namaSantri) {
+        needsUpdate = true;
+        return { ...d, namaSantri: s.Nama_Lengkap };
+      }
+      return d;
+    });
+    if (needsUpdate) {
+      setDiniyyahList(updated);
+    }
+  }, [santriList]);
   const [sanguList, setSanguList] = usePersistedState<SanguTransaksi[]>('SANGU_TRANSAKSI', INITIAL_SANGU_TRANSAKSI);
   const [barangKoperasiList, setBarangKoperasiList] = usePersistedState<BarangKoperasi[]>('BARANG_KOPERASI', INITIAL_BARANG_KOPERASI);
+  const [appSettings, setAppSettings] = usePersistedState<AppSettings>('APP_SETTINGS', DEFAULT_APP_SETTINGS);
+
+  const updateAppSettings = useCallback((newSettings: Partial<AppSettings>) => {
+    setAppSettings(prev => {
+      const now = new Date();
+      const timeStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      return {
+        ...prev,
+        ...newSettings,
+        terakhirDiperbarui: timeStr,
+        diperbaruiOleh: currentUser?.nama || 'Admin RTQ'
+      };
+    });
+    showToast('Pengaturan publikasi berhasil disimpan!', 'success');
+  }, [currentUser, showToast]);
 
   const INITIAL_ADMIN_NOTIFICATIONS: AppNotification[] = [];
 
@@ -928,18 +1014,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, [santriList]);
 
-  const showToast = (message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success') => {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 4);
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
   // Helper to get linked child for current Wali Santri
   const getSantriForWali = (): Santri | null => {
     if (!currentUser) return null;
@@ -1061,14 +1135,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       // Exact synchronized name matching the Data Santri
       const activeWali: UserAccount = {
-        id: `USR_WALI_${matchedSantri.NIS}`,
+        id: waliUser?.id || `USR_WALI_${matchedSantri.NIS}`,
         username: matchedSantri.Nama_Lengkap,
         nama: matchedSantri.Nama_Wali, // Nama Wali Santri yang tersinkronisasi sama persis dengan Data Santri di Admin
         role: 'Wali Santri',
         santriNIS: matchedSantri.NIS,
         namaSantri: matchedSantri.Nama_Lengkap,
+        password: waliUser?.password || waliUser?.plainPassword || (waliUser?.isDefaultPassword === false ? cleanPassword : 'rtq_cendekia'),
+        plainPassword: waliUser?.plainPassword || waliUser?.password || (waliUser?.isDefaultPassword === false ? cleanPassword : 'rtq_cendekia'),
         passwordHash: waliUser?.passwordHash || hashPassword('rtq_cendekia'),
         isDefaultPassword: waliUser?.isDefaultPassword ?? true,
+        passwordUpdatedAt: waliUser?.passwordUpdatedAt,
         isActive: true,
         lastLogin: new Date().toISOString()
       };
@@ -1138,7 +1215,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Check old password
     const isOldValid = currentUser.passwordHash 
       ? verifyPassword(oldPassword, currentUser.passwordHash)
-      : (oldPassword === 'Admin123' || oldPassword === 'rtq_cedikia' || oldPassword === '123' || oldPassword === currentUser.password);
+      : (oldPassword === 'Admin123' || oldPassword === 'rtq_cedikia' || oldPassword === 'rtq_cendekia' || oldPassword === '123' || oldPassword === currentUser.password || oldPassword === currentUser.plainPassword);
 
     if (!isOldValid) {
       return { success: false, message: 'Kata sandi lama yang Anda masukkan tidak sesuai.' };
@@ -1148,18 +1225,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedUser: UserAccount = {
       ...currentUser,
       passwordHash: newHash,
-      password: undefined, // Remove plaintext
-      isDefaultPassword: false
+      password: newPassword, // Disimpan agar Admin dapat mengetahui kata sandi jika diperlukan
+      plainPassword: newPassword,
+      isDefaultPassword: false,
+      passwordUpdatedAt: new Date().toISOString()
     };
 
     setCurrentUser(updatedUser);
     localStorage.setItem(LOCAL_STORAGE_PREFIX + 'USER_SESSION', JSON.stringify(updatedUser));
 
-    // Update in usersList
+    // Update in usersList so Admin can see the new password
     setUsersList(prev => {
-      const exists = prev.some(u => u.id === updatedUser.id);
+      const exists = prev.some(u => 
+        u.id === updatedUser.id || 
+        (u.santriNIS && updatedUser.santriNIS && u.santriNIS === updatedUser.santriNIS) ||
+        (u.username && updatedUser.username && u.username.toLowerCase() === updatedUser.username.toLowerCase())
+      );
       if (exists) {
-        return prev.map(u => u.id === updatedUser.id ? updatedUser : u);
+        return prev.map(u => {
+          if (
+            u.id === updatedUser.id || 
+            (u.santriNIS && updatedUser.santriNIS && u.santriNIS === updatedUser.santriNIS) ||
+            (u.username && updatedUser.username && u.username.toLowerCase() === updatedUser.username.toLowerCase())
+          ) {
+            return { 
+              ...u, 
+              passwordHash: newHash,
+              password: newPassword,
+              plainPassword: newPassword,
+              isDefaultPassword: false,
+              passwordUpdatedAt: updatedUser.passwordUpdatedAt
+            };
+          }
+          return u;
+        });
       }
       return [...prev, updatedUser];
     });
@@ -2085,9 +2184,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Pengguna dihapus.', 'warning');
   };
 
-  const resetUserPassword = (id: string, defaultPassword = 'rtq_cedikia') => {
+  const resetUserPassword = (id: string, defaultPassword = 'rtq_cendekia') => {
     const newHash = hashPassword(defaultPassword);
-    setUsersList(prev => prev.map(u => u.id === id ? { ...u, passwordHash: newHash, isDefaultPassword: true } : u));
+    setUsersList(prev => prev.map(u => {
+      const isTarget = u.id === id || (u.santriNIS && id.includes(u.santriNIS));
+      if (isTarget) {
+        return {
+          ...u,
+          passwordHash: newHash,
+          password: defaultPassword,
+          plainPassword: defaultPassword,
+          isDefaultPassword: true,
+          passwordUpdatedAt: new Date().toISOString()
+        };
+      }
+      return u;
+    }));
     showToast(`Kata sandi akun berhasil direset ke "${defaultPassword}"`, 'success');
   };
 
@@ -2112,6 +2224,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSanguList(INITIAL_SANGU_TRANSAKSI);
     setBarangKoperasiList(INITIAL_BARANG_KOPERASI);
     setUsersList(INITIAL_USERS);
+    setAppSettings(DEFAULT_APP_SETTINGS);
     showToast('Seluruh database berhasil dikembalikan ke format default standar BAZNAS!', 'info');
   };
 
@@ -2138,6 +2251,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       diniyyah: diniyyahList,
       users: usersList,
       appLogo: appLogo,
+      appSettings: appSettings,
       exportedAt: new Date().toISOString(),
       institution: 'RTQ Cendikia BAZNAS Masjid Agung Darussalam'
     };
@@ -2175,6 +2289,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (parsed.fotoKegiatan) setFotoKegiatanList(parsed.fotoKegiatan);
       if (parsed.diniyyah) setDiniyyahList(parsed.diniyyah);
       if (parsed.users) setUsersList(parsed.users);
+      if (parsed.appSettings) setAppSettings(parsed.appSettings);
       if (parsed.appLogo) {
         setAppLogoState(parsed.appLogo);
         try {
@@ -2300,6 +2415,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetAppLogo,
         isEditLogoModalOpen,
         setIsEditLogoModalOpen,
+        appSettings,
+        updateAppSettings,
         notifications,
         unreadNotificationsCount,
         markNotificationAsRead,

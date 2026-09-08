@@ -9,6 +9,7 @@ export const GantiPasswordModal: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -118,14 +119,14 @@ export const GantiPasswordModal: React.FC = () => {
                     type={showOld ? 'text' : 'password'}
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
-                    placeholder={currentUser.role === 'Admin' ? 'Masukkan "Admin123"' : 'Masukkan "rtq_cedikia"'}
-                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition"
+                    placeholder={currentUser.role === 'Admin' ? 'Masukkan "Admin123"' : 'Masukkan "rtq_cendekia"'}
+                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition font-medium"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowOld(!showOld)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
                     {showOld ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -142,14 +143,14 @@ export const GantiPasswordModal: React.FC = () => {
                     type={showNew ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Buat kata sandi baru yang kuat"
-                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition"
+                    placeholder="Buat kata sandi baru yang mudah diingat"
+                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition font-medium"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
                     {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -163,14 +164,28 @@ export const GantiPasswordModal: React.FC = () => {
                 <div className="relative">
                   <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
                   <input
-                    type="password"
+                    type={showConfirm ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Ketik ulang kata sandi baru"
-                    className="w-full pl-10 pr-4 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition"
+                    className="w-full pl-10 pr-10 py-2.5 text-xs bg-gray-50 border border-gray-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition font-medium"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                  >
+                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
+              </div>
+
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl text-[11px] text-emerald-800">
+                <p className="font-semibold text-emerald-900">🛡️ Informasi Sinkronisasi:</p>
+                <p className="text-emerald-700 mt-0.5">
+                  Kata sandi baru akan tersinkronisasi dengan sistem RTQ Cendikia agar Admin dapat membantu pemulihan akun jika Anda lupa kata sandi.
+                </p>
               </div>
 
               <div className="pt-2 flex items-center space-x-3">

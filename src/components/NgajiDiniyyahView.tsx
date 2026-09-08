@@ -45,7 +45,8 @@ import {
   Download,
   Users,
   ShieldCheck,
-
+  Lock,
+  Settings,
   Eye,
   QrCode,
   Loader2,
@@ -66,11 +67,17 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
     deleteDiniyyah,
     getSantriForWali,
     appLogo,
+    appSettings,
+    setActiveMenu,
     showToast
   } = useApp();
 
   const isWali = currentUser?.role === 'Wali Santri' || isWaliPortal;
   const linkedSantri = isWali ? getSantriForWali() : null;
+
+  // Publication Status Check
+  const isNilaiPublished = appSettings.publikasiNilai && appSettings.publikasiNilaiDiniyyah;
+  const isRaporPublished = appSettings.publikasiRapor && appSettings.publikasiRaporDiniyyah;
 
   // Filter States
   const [selectedTahun, setSelectedTahun] = useState<string>('2026/2027');
@@ -312,10 +319,18 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
 
   // Handle Print Action
   const handlePrint = (record: DiniyyahRecord) => {
+    if (isWali && !isRaporPublished) {
+      showToast('Rapor Diniyyah belum dipublikasikan oleh asatidz.', 'warning');
+      return;
+    }
     setSelectedRecordForPrint(record);
   };
 
   const handleDownloadPDF = async (record: DiniyyahRecord) => {
+    if (isWali && !isRaporPublished) {
+      showToast('Rapor Diniyyah belum dipublikasikan oleh asatidz.', 'warning');
+      return;
+    }
     try {
       setDownloadingId(record.id);
       showToast(`Sedang membuat PDF Rapor Diniyyah untuk ${record.namaSantri}...`, 'info');
@@ -355,6 +370,69 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
   return (
     <div className="space-y-6 font-sans">
       
+      {/* Admin Publication Status Notice */}
+      {!isWali && (
+        <div className={`p-3.5 px-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs ${
+          isNilaiPublished && isRaporPublished
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+            : 'bg-amber-50 border-amber-300 text-amber-950'
+        }`}>
+          <div className="flex items-center space-x-2.5">
+            {isNilaiPublished && isRaporPublished ? (
+              <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+                <Lock className="w-3.5 h-3.5" />
+              </div>
+            )}
+            <div className="space-y-0.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-bold">Status Publikasi Diniyyah untuk Wali:</span>
+                <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${isNilaiPublished ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'}`}>
+                  Nilai: {isNilaiPublished ? 'Dipublikasikan' : 'Terkunci'}
+                </span>
+                <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${isRaporPublished ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200 text-amber-900'}`}>
+                  Rapor PDF: {isRaporPublished ? 'Dipublikasikan' : 'Terkunci'}
+                </span>
+              </div>
+            </div>
+          </div>
+          {currentUser?.role === 'Admin' && (
+            <button
+              onClick={() => setActiveMenu('pengaturan')}
+              className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 rounded-xl text-xs font-bold text-gray-700 shadow-2xs flex items-center gap-1.5 cursor-pointer flex-shrink-0"
+            >
+              <Settings className="w-3.5 h-3.5 text-gray-500" />
+              <span>Pengaturan</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Wali Notice when Nilai or Rapor is Locked */}
+      {isWali && (!isNilaiPublished || !isRaporPublished) && (
+        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-300 flex items-start space-x-3 text-xs text-amber-950 animate-in fade-in">
+          <div className="w-7 h-7 rounded-xl bg-amber-200 text-amber-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <Lock className="w-4 h-4" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-extrabold text-amber-900 text-sm">Informasi Publikasi Ngaji Diniyyah</h4>
+            {!isNilaiPublished && (
+              <p className="text-amber-800">
+                • {appSettings.pesanNilaiTerkunci || 'Nilai Diniyyah sedang dalam proses rekapitulasi dan belum dipublikasikan oleh asatidz.'}
+              </p>
+            )}
+            {!isRaporPublished && (
+              <p className="text-amber-800">
+                • {appSettings.pesanRaporTerkunci || 'Rapor resmi Diniyyah belum dipublikasikan untuk periode ini.'}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 1. Header Banner & Quick Information */}
       <div className="bg-gradient-to-br from-emerald-900 via-teal-900 to-emerald-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-700/50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -470,7 +548,13 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-blue-800">{stats.avg}</h3>
+          <h3 className="text-2xl font-black text-blue-800">
+            {isWali && !isNilaiPublished ? (
+              <span className="text-base text-amber-700 font-bold flex items-center gap-1.5"><Lock className="w-4 h-4" /> Terkunci</span>
+            ) : (
+              stats.avg
+            )}
+          </h3>
           <p className="text-xs text-gray-500 mt-1">Skala penilaian 0 - 100</p>
         </div>
 
@@ -481,8 +565,14 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
               <Award className="w-4 h-4" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-yellow-700">{stats.mumtazCount} <span className="text-xs font-normal text-gray-500">Santri</span></h3>
-          <p className="text-xs text-emerald-600 font-semibold mt-1">Nilai $\ge 90$ Istimewa</p>
+          <h3 className="text-2xl font-black text-yellow-700">
+            {isWali && !isNilaiPublished ? (
+              <span className="text-base text-amber-700 font-bold flex items-center gap-1.5"><Lock className="w-4 h-4" /> Terkunci</span>
+            ) : (
+              <>{stats.mumtazCount} <span className="text-xs font-normal text-gray-500">Santri</span></>
+            )}
+          </h3>
+          <p className="text-xs text-emerald-600 font-semibold mt-1">Nilai ≥ 90 Istimewa</p>
         </div>
 
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200 shadow-xs">
@@ -492,7 +582,13 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-teal-800">{stats.highest}</h3>
+          <h3 className="text-2xl font-black text-teal-800">
+            {isWali && !isNilaiPublished ? (
+              <span className="text-base text-amber-700 font-bold flex items-center gap-1.5"><Lock className="w-4 h-4" /> Terkunci</span>
+            ) : (
+              stats.highest
+            )}
+          </h3>
           <p className="text-xs text-gray-500 mt-1">Rata-rata mapel tertinggi</p>
         </div>
       </div>
@@ -669,37 +765,58 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
                         </div>
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {rec.nilaiList.map((item, idx) => (
-                            <div key={idx} className="bg-gray-50 px-2 py-1 rounded border border-gray-200 flex items-center justify-between text-[11px]">
-                              <span className="text-gray-600 truncate max-w-[120px]" title={item.mapel}>{item.mapel}</span>
-                              <span className={`font-bold ml-1.5 ${item.nilai !== null && item.nilai >= 75 ? 'text-emerald-700' : 'text-amber-700'}`}>
-                                {item.nilai !== null ? item.nilai : '-'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
+                        {isWali && !isNilaiPublished ? (
+                          <div className="p-2 bg-amber-50/80 border border-amber-200 rounded-xl text-amber-800 font-bold text-[11px] flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                            <span>Nilai Belum Dipublikasikan</span>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {rec.nilaiList.map((item, idx) => (
+                              <div key={idx} className="bg-gray-50 px-2 py-1 rounded border border-gray-200 flex items-center justify-between text-[11px]">
+                                <span className="text-gray-600 truncate max-w-[120px]" title={item.mapel}>{item.mapel}</span>
+                                <span className={`font-bold ml-1.5 ${item.nilai !== null && item.nilai >= 75 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                  {item.nilai !== null ? item.nilai : '-'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-center font-extrabold text-gray-900 text-sm">
-                        {rec.jumlahNilai}
+                        {isWali && !isNilaiPublished ? '-' : rec.jumlahNilai}
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 font-extrabold text-sm border border-emerald-200">
-                          {rec.rataRata}
-                        </span>
+                        {isWali && !isNilaiPublished ? (
+                          <span className="text-gray-400 font-semibold">-</span>
+                        ) : (
+                          <span className="inline-block px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 font-extrabold text-sm border border-emerald-200">
+                            {rec.rataRata}
+                          </span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        {renderPredikatBadge(rec.predikat)}
+                        {isWali && !isNilaiPublished ? (
+                          <span className="text-amber-800 text-[11px] font-bold bg-amber-100/70 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> Terkunci
+                          </span>
+                        ) : (
+                          renderPredikatBadge(rec.predikat)
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center space-x-1.5">
                           {/* Tombol Lihat Lembar Nilai */}
                           <button
                             onClick={() => handlePrint(rec)}
-                            title="Lihat Pratinjau Lembar Rapor Diniyyah"
-                            className="px-2.5 py-1.5 text-emerald-800 bg-emerald-50 hover:bg-emerald-700 hover:text-white rounded-lg transition font-bold text-xs flex items-center space-x-1 border border-emerald-300 cursor-pointer shadow-2xs"
+                            title={isWali && !isRaporPublished ? "Rapor Diniyyah Belum Dipublikasikan" : "Lihat Pratinjau Lembar Rapor Diniyyah"}
+                            className={`px-2.5 py-1.5 rounded-lg transition font-bold text-xs flex items-center space-x-1 border cursor-pointer shadow-2xs ${
+                              isWali && !isRaporPublished
+                                ? 'bg-gray-100 text-gray-400 border-gray-200'
+                                : 'text-emerald-800 bg-emerald-50 hover:bg-emerald-700 hover:text-white border-emerald-300'
+                            }`}
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            {isWali && !isRaporPublished ? <Lock className="w-3.5 h-3.5 text-gray-400" /> : <Eye className="w-3.5 h-3.5" />}
                             <span>Lihat</span>
                           </button>
 
@@ -707,11 +824,17 @@ export const NgajiDiniyyahView: React.FC<NgajiDiniyyahViewProps> = ({ isWaliPort
                           <button
                             onClick={() => handleDownloadPDF(rec)}
                             disabled={downloadingId === rec.id}
-                            title="Download PDF Rapor Diniyyah"
-                            className="px-2.5 py-1.5 text-teal-800 bg-teal-50 hover:bg-teal-700 hover:text-white rounded-lg transition font-bold text-xs flex items-center space-x-1 border border-teal-300 cursor-pointer shadow-2xs disabled:opacity-50"
+                            title={isWali && !isRaporPublished ? "Rapor Diniyyah Belum Dipublikasikan" : "Download PDF Rapor Diniyyah"}
+                            className={`px-2.5 py-1.5 rounded-lg transition font-bold text-xs flex items-center space-x-1 border cursor-pointer shadow-2xs disabled:opacity-50 ${
+                              isWali && !isRaporPublished
+                                ? 'bg-gray-100 text-gray-400 border-gray-200'
+                                : 'text-teal-800 bg-teal-50 hover:bg-teal-700 hover:text-white border-teal-300'
+                            }`}
                           >
                             {downloadingId === rec.id ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : isWali && !isRaporPublished ? (
+                              <Lock className="w-3.5 h-3.5 text-gray-400" />
                             ) : (
                               <Download className="w-3.5 h-3.5 text-teal-600 group-hover:text-white" />
                             )}

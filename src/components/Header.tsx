@@ -64,6 +64,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
     },
     'foto-kegiatan': { title: 'Foto Kegiatan RTQ', subtitle: 'Galeri dokumentasi kegiatan, wisuda, kajian, dan aktivitas santri' },
     'media-rtq': { title: 'Media RTQ Cendikia', subtitle: 'Akses media sosial resmi Facebook, YouTube, dan Instagram RTQ' },
+    'ganti-password': { title: 'Ganti Kata Sandi Akun', subtitle: 'Perbarui kata sandi portal wali santri secara mandiri dan tersinkronisasi' },
     notifikasi: { title: 'Notifikasi WhatsApp', subtitle: 'Generator pesan otomatis laporan perkembangan ke wali santri' },
     pengguna: { title: 'Manajemen Pengguna & Sistem', subtitle: 'Kelola akun, backup data, dan konfigurasi database' },
   };

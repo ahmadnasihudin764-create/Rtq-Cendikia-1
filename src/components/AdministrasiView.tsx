@@ -26,12 +26,12 @@ export const AdministrasiView: React.FC = () => {
   const [copiedRekening, setCopiedRekening] = useState(false);
 
   const handleCopyRekening = () => {
-    const rekeningNumber = '7220983708';
+    const rekeningNumber = '012901044008503';
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(rekeningNumber)
         .then(() => {
           setCopiedRekening(true);
-          showToast('Nomor rekening BSI berhasil disalin.', 'success');
+          showToast('Nomor rekening BRI berhasil disalin.', 'success');
           setTimeout(() => setCopiedRekening(false), 3000);
         })
         .catch(() => {
@@ -53,7 +53,7 @@ export const AdministrasiView: React.FC = () => {
     try {
       document.execCommand('copy');
       setCopiedRekening(true);
-      showToast('Nomor rekening BSI berhasil disalin.', 'success');
+      showToast('Nomor rekening BRI berhasil disalin.', 'success');
       setTimeout(() => setCopiedRekening(false), 3000);
     } catch {
       showToast('Gagal menyalin nomor rekening.', 'error');
@@ -62,8 +62,8 @@ export const AdministrasiView: React.FC = () => {
   };
 
   const handleConfirmPaymentWA = () => {
-    const message = `Assalamu'alaikum Warahmatullahi Wabarakatuh Bu Sri Siti Khafsoh,\n\nSaya ingin konfirmasi terkait penerimaan SPP / Infaq RTQ Cendikia BAZNAS ke rekening BSI (7220983708).\n\nTerima kasih.`;
-    const waUrl = `https://wa.me/6285388959293?text=${encodeURIComponent(message)}`;
+    const message = `Assalamu'alaikum Warahmatullahi Wabarakatuh Pak Suwasno,\n\nSaya ingin konfirmasi terkait penerimaan SPP / Infaq RTQ Cendikia BAZNAS ke rekening BRI (012901044008503).\n\nTerima kasih.`;
+    const waUrl = `https://wa.me/6281367009740?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -194,20 +194,20 @@ export const AdministrasiView: React.FC = () => {
 
             <div className="flex items-center gap-2 bg-emerald-800/70 px-3 py-1.5 rounded-xl border border-emerald-700/80 self-start sm:self-auto text-xs font-bold text-emerald-200">
               <ShieldCheck className="w-4 h-4 text-emerald-300" />
-              <span>A.N. Sri Siti Khafsoh</span>
+              <span>A.N. SUWASNO</span>
             </div>
           </div>
 
           <div className="bg-emerald-900/90 p-4 rounded-2xl border border-emerald-700/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-yellow-300 uppercase tracking-wider block">Bank Syariah Indonesia (BSI)</span>
+                <span className="text-[10px] font-bold text-yellow-300 uppercase tracking-wider block">Bank Rakyat Indonesia (BRI)</span>
                 <span className="text-[9px] bg-emerald-800 px-1.5 py-0.5 rounded text-emerald-200 font-medium">Rekening Resmi</span>
               </div>
               <span className="text-xl font-mono font-black text-yellow-300 tracking-wider select-all block">
-                7220983708
+                012901044008503
               </span>
-              <p className="text-[11px] text-emerald-200/80">Atas Nama: <strong className="text-white">Sri Siti Khafsoh</strong></p>
+              <p className="text-[11px] text-emerald-200/80">Atas Nama: <strong className="text-white">SUWASNO</strong></p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -239,7 +239,7 @@ export const AdministrasiView: React.FC = () => {
                 className="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition cursor-pointer"
               >
                 <MessageCircle className="w-3.5 h-3.5 text-yellow-300" />
-                <span>Konfirmasi via WhatsApp (Sri Siti Khafsoh)</span>
+                <span>Konfirmasi via WhatsApp (Suwasno)</span>
               </button>
             </div>
           </div>

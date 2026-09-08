@@ -312,12 +312,12 @@ export const INITIAL_SANTRI: Santri[] = ([
   },
   {
     NIS: 'STR012',
-    Nama_Lengkap: 'Aldo Afri Pranata',
+    Nama_Lengkap: 'Aidil Pratama',
     Jenis_Kelamin: 'Laki-laki',
-    Kelas: 'Kelas 2 SD',
+    Kelas: 'Kelas 5 SD',
     Halaqah: 'Semua Halaqoh',
-    Nama_Wali: 'Mutmainnah',
-    WA_Wali: '+6285783719001',
+    Nama_Wali: 'Oki Saputra',
+    WA_Wali: '+6285269805546',
     Alamat: 'Jl. Kenanga Mas No. 9',
     Tanggal_Lahir: '2014-10-15',
     Tanggal_Masuk: '2024-07-15',
@@ -1396,48 +1396,7 @@ export const INITIAL_SPP: AdministrasiSPP[] = [
 
 export const INITIAL_JADWAL: JadwalKegiatan[] = [];
 
-export const INITIAL_PERIZINAN: PerizinanRecord[] = [
-  {
-    id: 'IZN001',
-    tanggalPengajuan: '2026-08-15',
-    NIS: 'STR001',
-    namaSantri: 'Hizam Arfan Al Husain',
-    tanggalMulai: '2026-08-19',
-    tanggalSelesai: '2026-08-20',
-    jenisIzin: 'Pulang/Keluarga',
-    alasan: 'Menghadiri acara tasyakuran pernikahan kerabat keluarga di luar kota',
-    status: 'Disetujui',
-    penjemput: 'Bapak Teguh Santoso (Ayah Kandung)',
-    disetujuiOleh: 'Ustadz Ahmad Fauzan, S.Pd.I',
-    catatanUstadz: 'Diizinkan dengan syarat muroja\'ah mandiri Juz 30 minimal 3 surat per hari.'
-  },
-  {
-    id: 'IZN002',
-    tanggalPengajuan: '2026-08-16',
-    NIS: 'STR002',
-    namaSantri: 'Athira Khoiriyah Lathifa',
-    tanggalMulai: '2026-08-18',
-    tanggalSelesai: '2026-08-18',
-    jenisIzin: 'Sakit/Berobat',
-    alasan: 'Pemeriksaan kesehatan gigi dan kontrol rutin di RSUD',
-    status: 'Selesai',
-    penjemput: 'Ibu Saprudin',
-    disetujuiOleh: 'Ustadzah Nurul Aisyah, S.Ag',
-    catatanUstadz: 'Telah kembali ke pondok tepat waktu dalam kondisi sehat.'
-  },
-  {
-    id: 'IZN003',
-    tanggalPengajuan: '2026-08-17',
-    NIS: 'STR003',
-    namaSantri: 'Sahid Maulana',
-    tanggalMulai: '2026-08-21',
-    tanggalSelesai: '2026-08-22',
-    jenisIzin: 'Kegiatan Luar',
-    alasan: 'Mengikuti seleksi olimpiade sains tingkat kecamatan',
-    status: 'Menunggu Persetujuan',
-    penjemput: 'Ibu Novi Masruroh'
-  }
-];
+export const INITIAL_PERIZINAN: PerizinanRecord[] = [];
 
 export const INITIAL_PENGUMUMAN: PengumumanRecord[] = [];
 

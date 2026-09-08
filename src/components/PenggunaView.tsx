@@ -16,7 +16,11 @@ import {
   CheckCircle2,
   Sparkles,
   Edit3,
-  RotateCcw
+  RotateCcw,
+  KeyRound,
+  Eye,
+  EyeOff,
+  Copy
 } from 'lucide-react';
 import { Logo } from './Logo';
 
@@ -37,6 +41,7 @@ export const PenggunaView: React.FC = () => {
   const isCustomLogo = appLogo && appLogo !== '/assets/logo.png';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [revealedUsers, setRevealedUsers] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState<Partial<UserAccount>>({
     username: '',
     nama: '',
@@ -44,6 +49,18 @@ export const PenggunaView: React.FC = () => {
     email: '',
     isActive: true
   });
+
+  const toggleUserPass = (id: string) => {
+    setRevealedUsers(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  const handleCopyPass = (pass: string, username: string) => {
+    navigator.clipboard.writeText(pass);
+    showToast(`Kata sandi untuk ${username} ("${pass}") berhasil disalin!`, 'success');
+  };
 
   const handleOpenAdd = () => {
     setFormData({
@@ -132,6 +149,7 @@ export const PenggunaView: React.FC = () => {
               <tr>
                 <th className="p-3.5">Nama Lengkap</th>
                 <th className="p-3.5">Username</th>
+                <th className="p-3.5">Kata Sandi / Password</th>
                 <th className="p-3.5">Email</th>
                 <th className="p-3.5">Hak Akses (Role)</th>
                 <th className="p-3.5 text-center">Aksi</th>
@@ -146,6 +164,8 @@ export const PenggunaView: React.FC = () => {
                 if (u.role === 'Wali Santri') badgeRole = 'bg-blue-100 text-blue-900 font-bold';
 
                 const isSelf = currentUser?.id === u.id;
+                const isRevealed = Boolean(revealedUsers[u.id]);
+                const activePassword = u.plainPassword || u.password || (u.role === 'Wali Santri' ? 'rtq_cendekia' : 'cendikia123');
 
                 return (
                   <tr key={u.id} className="hover:bg-gray-50/80 transition">
@@ -154,6 +174,34 @@ export const PenggunaView: React.FC = () => {
                       {isSelf && <span className="ml-2 text-[10px] text-emerald-700 font-normal">(Anda)</span>}
                     </td>
                     <td className="p-3.5 font-mono text-emerald-800 font-semibold">{u.username}</td>
+                    <td className="p-3.5">
+                      <div className="flex items-center space-x-1.5">
+                        <div className={`font-mono text-xs px-2 py-0.5 rounded border flex items-center space-x-1 ${
+                          u.isDefaultPassword === false 
+                            ? 'bg-emerald-50 text-emerald-900 border-emerald-300 font-bold' 
+                            : 'bg-gray-100 text-gray-800 border-gray-200'
+                        }`}>
+                          <KeyRound className="w-3 h-3 text-emerald-700 flex-shrink-0" />
+                          <span>{isRevealed ? activePassword : '••••••••'}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleUserPass(u.id)}
+                          className="p-1 text-gray-400 hover:text-gray-700 transition cursor-pointer rounded"
+                          title={isRevealed ? 'Sembunyikan' : 'Lihat Sandi'}
+                        >
+                          {isRevealed ? <EyeOff className="w-3.5 h-3.5 text-emerald-700" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyPass(activePassword, u.username)}
+                          className="p-1 text-gray-400 hover:text-emerald-700 transition cursor-pointer rounded"
+                          title="Salin Sandi"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
                     <td className="p-3.5 text-gray-500">{u.email}</td>
                     <td className="p-3.5">
                       <span className={`px-2.5 py-1 text-[10px] rounded-full ${badgeRole}`}>

@@ -50,6 +50,7 @@ import { WaliSantriPortalView } from './components/WaliSantriPortalView';
 import { ProfilSantriView } from './components/ProfilSantriView';
 import { MediaRTQView } from './components/MediaRTQView';
 import { FotoKegiatanView } from './components/FotoKegiatanView';
+import { PengaturanView } from './components/PengaturanView';
 
 const MainLayout: React.FC = () => {
   const { currentUser, activeMenu, setActiveMenu, setIsQRScannerOpen } = useApp();
@@ -127,6 +128,8 @@ const MainLayout: React.FC = () => {
         return <NotifikasiWAView />;
       case 'pengguna':
         return <PenggunaView />;
+      case 'pengaturan':
+        return <PengaturanView />;
       default:
         return <DashboardView />;
     }

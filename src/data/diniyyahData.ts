@@ -13,7 +13,7 @@ export const DINIYYAH_ULA_NAMES = [
   'M. Irsyad Maulana',
   'Aishwa Aliya Hasanah',
   'Arsyi Syauqia Ramadhani',
-  'Aldo Afri Pranata',
+  'Aidil Pratama',
   'Deo Muhammad Rizki',
   'Nilna Hayatas Syahira',
   'Azmi Khaliqa Dzahin',

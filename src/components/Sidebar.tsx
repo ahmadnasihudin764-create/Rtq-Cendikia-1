@@ -27,7 +27,8 @@ import {
   Images,
   BookMarked,
   BarChart3,
-  Wallet
+  Wallet,
+  Settings
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -80,6 +81,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile, setIsOpenMobile 
 
     { id: 'notifikasi', label: 'Notifikasi WhatsApp', icon: MessageSquareShare, category: 'Sistem' },
     { id: 'pengguna', label: 'Manajemen Pengguna', icon: UserCog, category: 'Sistem' },
+    { id: 'pengaturan', label: 'Pengaturan', icon: Settings, category: 'Sistem' },
   ];
 
   const waliMenuItems = [
@@ -99,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile, setIsOpenMobile 
     { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone, category: 'Informasi' },
     { id: 'foto-kegiatan', label: 'Foto Kegiatan', icon: Images, category: 'Informasi' },
     { id: 'media-rtq', label: 'Media RTQ', icon: Share2, category: 'Informasi' },
+    { id: 'ganti-password', label: 'Ganti Kata Sandi', icon: KeyRound, category: 'Akun & Keamanan' },
   ];
 
   const menuItems = isWali ? waliMenuItems : adminMenuItems;
@@ -209,15 +212,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpenMobile, setIsOpenMobile 
 
           {/* Account & Logout Button */}
           <div className="pt-4 mt-3 border-t border-emerald-800/80 space-y-1">
-            {!isWali && (
-              <button
-                onClick={() => setIsGantiPasswordOpen(true)}
-                className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-emerald-300 hover:bg-emerald-800/50 hover:text-white transition-colors text-xs"
-              >
-                <KeyRound className="w-4 h-4 flex-shrink-0 text-emerald-400" />
-                <span>Ganti Kata Sandi</span>
-              </button>
-            )}
+            <button
+              onClick={() => setIsGantiPasswordOpen(true)}
+              className="w-full flex items-center space-x-3 px-3 py-2 rounded-xl text-emerald-300 hover:bg-emerald-800/50 hover:text-white transition-colors text-xs cursor-pointer"
+            >
+              <KeyRound className="w-4 h-4 flex-shrink-0 text-yellow-400" />
+              <span>Ganti Kata Sandi</span>
+            </button>
 
             <button
               id="btn-logout"

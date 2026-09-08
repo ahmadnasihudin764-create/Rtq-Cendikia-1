@@ -10,7 +10,7 @@ export const USTADZ_PEMBIMBING_LIST: string[] = [
   'Ustadzah Fitriyani',
   'Ustadzah Dzatun Nafis Al baidh, S.Pd',
   'Ustadzah Sri Siti Khafsoh',
-  'Ustadzah Fitriyani',
+  'Ust Ahmad Nasyikhudin, S.Pd',
   'Ustadzah Fitriyani',
   'Ustadzah Sri Siti Khafsoh',
   'Ustadzah Sri Siti Khafsoh',

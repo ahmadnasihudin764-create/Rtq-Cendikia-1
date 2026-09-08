@@ -6,6 +6,7 @@ export interface UserAccount {
   nama: string;
   role: UserRole;
   password?: string;
+  plainPassword?: string;
   passwordHash?: string;
   email?: string;
   santriNIS?: string; // If role is Wali Santri
@@ -14,6 +15,7 @@ export interface UserAccount {
   avatarUrl?: string;
   isActive?: boolean;
   isDefaultPassword?: boolean;
+  passwordUpdatedAt?: string;
   lastLogin?: string;
   createdAt?: string;
 }
@@ -405,3 +407,36 @@ export const DAFTAR_HALAQAH = [
 ] as const;
 
 export type NamaHalaqah = typeof DAFTAR_HALAQAH[number];
+
+export interface AppSettings {
+  // Publikasi Rapor
+  publikasiRapor: boolean;
+  publikasiRaporTahfidz: boolean;
+  publikasiRaporDiniyyah: boolean;
+  pesanRaporTerkunci?: string;
+
+  // Publikasi Nilai
+  publikasiNilai: boolean;
+  publikasiNilaiTahfidz: boolean;
+  publikasiNilaiTahsin: boolean;
+  publikasiNilaiDiniyyah: boolean;
+  pesanNilaiTerkunci?: string;
+
+  // Meta
+  terakhirDiperbarui?: string;
+  diperbaruiOleh?: string;
+}
+
+export const DEFAULT_APP_SETTINGS: AppSettings = {
+  publikasiRapor: true,
+  publikasiRaporTahfidz: true,
+  publikasiRaporDiniyyah: true,
+  pesanRaporTerkunci: 'Laporan hasil belajar / Rapor santri (Tahfidz & Diniyyah) sedang dalam proses finalisasi oleh asatidz dan belum dipublikasikan untuk periode ini.',
+  publikasiNilai: true,
+  publikasiNilaiTahfidz: true,
+  publikasiNilaiTahsin: true,
+  publikasiNilaiDiniyyah: true,
+  pesanNilaiTerkunci: 'Rekap penilaian dan capaian setoran harian santri sedang dalam proses verifikasi asatidz dan belum dipublikasikan.',
+  terakhirDiperbarui: '2026-08-20 08:00',
+  diperbaruiOleh: 'Admin RTQ'
+};

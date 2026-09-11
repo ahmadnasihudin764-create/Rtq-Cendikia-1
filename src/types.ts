@@ -187,7 +187,7 @@ export interface AdministrasiSPP {
   Bulan: string;
   Tahun: string;
   Jumlah_Bayar: number;
-  Metode: 'Tunai' | 'Transfer Bank' | 'QRIS BAZNAS';
+  Metode: 'Transfer Bank BRI' | 'Tunai ke Kantor RTQ' | 'Transfer Bank' | 'Tunai';
   Status_Bayar: 'Lunas' | 'Belum Lunas' | 'Beasiswa BAZNAS';
   Nomor_Kwitansi: string;
   Petugas: string;

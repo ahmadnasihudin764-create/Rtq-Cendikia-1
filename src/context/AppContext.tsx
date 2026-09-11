@@ -56,6 +56,7 @@ import {
 import { DINIYYAH_CONFIG } from '../types';
 import { hashPassword, verifyPassword, DEFAULT_ADMIN_ACCOUNT } from '../utils/authUtils';
 import { persistFotoKegiatan, loadPersistedFotoKegiatan } from '../utils/imageStorage';
+import { subscribeToCloudSync, pushToCloudSync } from '../lib/cloudSync';
 
 interface ToastMessage {
   id: string;
@@ -147,6 +148,9 @@ interface AppContextType {
   updatePelanggaran: (id: string, data: Partial<PelanggaranRecord>) => void;
 
   addSPP: (spp: AdministrasiSPP) => void;
+  updateSPP: (id: string, data: Partial<AdministrasiSPP>) => { success: boolean; message: string };
+  deleteSPP: (id: string) => { success: boolean; message: string };
+  clearAllSPP: () => { success: boolean; message: string };
   addJadwal: (jadwal: JadwalKegiatan) => void;
   updateJadwal: (id: string, data: Partial<JadwalKegiatan>) => void;
   deleteJadwal: (id: string) => void;
@@ -427,19 +431,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true, message: 'Logo berhasil dikembalikan ke default.' };
   };
 
-  // Helper for localStorage state initialization
+  // Helper for multi-device Firestore synchronization with local fallback persistence
   const usePersistedState = <T,>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+    const isRemoteUpdateRef = useRef(false);
+    const lastPushedStringRef = useRef<string>('');
+
     const [state, setState] = useState<T>(() => {
       const saved = localStorage.getItem(LOCAL_STORAGE_PREFIX + key);
-      if (saved) {
+      if (saved !== null && saved !== undefined && saved !== '') {
         try {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed as T;
-          } else if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-            return parsed as T;
-          }
-          return initialValue;
+          return parsed as T;
         } catch (e) {
           return initialValue;
         }
@@ -447,161 +449,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return initialValue;
     });
 
+    // 1. Subscribe to real-time Firestore changes from other devices
     useEffect(() => {
+      const unsubscribe = subscribeToCloudSync<T>(key, (remoteData) => {
+        if (remoteData !== undefined && remoteData !== null) {
+          const remoteJson = JSON.stringify(remoteData);
+          if (remoteJson !== lastPushedStringRef.current) {
+            isRemoteUpdateRef.current = true;
+            setState(remoteData);
+            try {
+              localStorage.setItem(LOCAL_STORAGE_PREFIX + key, remoteJson);
+            } catch (err) {
+              console.warn(`Gagal menyimpan sync remote ${key} ke local:`, err);
+            }
+          }
+        }
+      });
+
+      return () => {
+        unsubscribe();
+      };
+    }, [key]);
+
+    // 2. Persist locally and push updates to Firestore when changed by current user
+    useEffect(() => {
+      const serialized = JSON.stringify(state);
       try {
-        localStorage.setItem(LOCAL_STORAGE_PREFIX + key, JSON.stringify(state));
+        localStorage.setItem(LOCAL_STORAGE_PREFIX + key, serialized);
       } catch (err) {
         console.warn(`Gagal menyimpan ${key} ke localStorage:`, err);
       }
-    }, [key, state]);
+
+      // If update came from remote cloud sync, don't echo back
+      if (isRemoteUpdateRef.current) {
+        isRemoteUpdateRef.current = false;
+        lastPushedStringRef.current = serialized;
+        return;
+      }
+
+      // Push to Firestore Cloud Database
+      if (lastPushedStringRef.current !== serialized) {
+        lastPushedStringRef.current = serialized;
+        pushToCloudSync<T>(key, state, currentUser?.nama || 'Admin').catch((err) =>
+          console.warn(`[CloudSync] Gagal upload sync untuk ${key}:`, err)
+        );
+      }
+    }, [key, state, currentUser]);
 
     return [state, setState];
   };
 
   const [santriList, setSantriList] = usePersistedState<Santri[]>('SANTRI', INITIAL_SANTRI);
-
-  // Auto-sync initial phone numbers & addresses and ensure strictly 65 unique santri without duplicates
-  useEffect(() => {
-    if (!santriList || santriList.length === 0) {
-      setSantriList(INITIAL_SANTRI);
-      return;
-    }
-
-    // Check for duplicate NIS or duplicate names or unexpected lengths
-    const seenNames = new Set<string>();
-    const seenNis = new Set<string>();
-    let hasDuplicates = false;
-    for (const s of santriList) {
-      if (seenNames.has(s.Nama_Lengkap) || seenNis.has(s.NIS)) {
-        hasDuplicates = true;
-        break;
-      }
-      seenNames.add(s.Nama_Lengkap);
-      seenNis.add(s.NIS);
-    }
-
-    if (hasDuplicates || santriList.length !== INITIAL_SANTRI.length) {
-      setSantriList(INITIAL_SANTRI);
-      return;
-    }
-
-    const initialMap = new Map(INITIAL_SANTRI.map(s => [s.NIS, s]));
-    let needsUpdate = false;
-    const updated = santriList.map(s => {
-      const initialS = initialMap.get(s.NIS);
-      if (initialS) {
-        let changed = false;
-        const newObj = { ...s };
-        // Sync name, wali, and phone if updated in initial data
-        if (s.Nama_Lengkap !== initialS.Nama_Lengkap || s.Nama_Wali !== initialS.Nama_Wali || s.WA_Wali !== initialS.WA_Wali) {
-          newObj.Nama_Lengkap = initialS.Nama_Lengkap;
-          newObj.Nama_Wali = initialS.Nama_Wali;
-          newObj.WA_Wali = initialS.WA_Wali;
-          newObj.Nama_Panggilan = initialS.Nama_Panggilan || initialS.Nama_Lengkap.split(' ')[0];
-          changed = true;
-        }
-        // Sync phone if still placeholder
-        if (s.WA_Wali && s.WA_Wali.startsWith('0812345670') && s.WA_Wali !== initialS.WA_Wali) {
-          newObj.WA_Wali = initialS.WA_Wali;
-          changed = true;
-        }
-        // Sync address if not yet Musi Rawas / updated
-        if (s.Kabupaten_Kota !== initialS.Kabupaten_Kota || s.Desa_Kelurahan !== initialS.Desa_Kelurahan || s.Alamat !== initialS.Alamat || s.RT_RW !== '') {
-          newObj.Alamat = initialS.Alamat;
-          newObj.Desa_Kelurahan = initialS.Desa_Kelurahan;
-          newObj.Kecamatan = initialS.Kecamatan;
-          newObj.Kabupaten_Kota = initialS.Kabupaten_Kota;
-          newObj.Provinsi = initialS.Provinsi;
-          newObj.RT_RW = '';
-          changed = true;
-        }
-        // Sync Tempat & Tanggal Lahir if different from initial
-        if (s.Tempat_Lahir !== initialS.Tempat_Lahir || s.Tanggal_Lahir !== initialS.Tanggal_Lahir) {
-          newObj.Tempat_Lahir = initialS.Tempat_Lahir;
-          newObj.Tanggal_Lahir = initialS.Tanggal_Lahir;
-          changed = true;
-        }
-        // Sync Pembimbing / Ustadz Pembimbing if empty or different from official list
-        if (s.Pembimbing !== initialS.Pembimbing || s.Ustadz_Pembimbing !== initialS.Ustadz_Pembimbing) {
-          newObj.Pembimbing = initialS.Pembimbing;
-          newObj.Ustadz_Pembimbing = initialS.Ustadz_Pembimbing;
-          changed = true;
-        }
-        // Sync Kelas if different from initial
-        if (s.Kelas !== initialS.Kelas) {
-          newObj.Kelas = initialS.Kelas;
-          changed = true;
-        }
-        // Sync Target_Juz if different from initial
-        if (s.Target_Juz !== initialS.Target_Juz) {
-          newObj.Target_Juz = initialS.Target_Juz;
-          changed = true;
-        }
-        // Sync Halaqah to updated Halaqah names
-        if (s.Halaqah !== initialS.Halaqah || s.Halaqah.includes('Abu Bakar') || s.Halaqah.includes('Khadijah') || s.Halaqah.includes('Umar Bin') || s.Halaqah.includes('Aisyah Binti')) {
-          newObj.Halaqah = initialS.Halaqah;
-          changed = true;
-        }
-        if (changed) {
-          needsUpdate = true;
-          return newObj;
-        }
-      }
-      return s;
-    });
-
-    if (needsUpdate) {
-      setSantriList(updated);
-    }
-  }, []);
-
   const [pengajarList, setPengajarList] = usePersistedState<Pengajar[]>('PENGAJAR', INITIAL_PENGAJAR);
-
-  // Sync Pengajar Halaqah_Binaan to new Halaqah names / Semua Halaqoh
-  useEffect(() => {
-    if (!pengajarList || pengajarList.length === 0) return;
-    const initialMap = new Map(INITIAL_PENGAJAR.map(p => [p.ID_Pengajar, p]));
-    let needsUpdate = false;
-    const updated = pengajarList.map(p => {
-      const initP = initialMap.get(p.ID_Pengajar);
-      if (initP && (p.Halaqah_Binaan !== initP.Halaqah_Binaan || p.Halaqah_Binaan.includes('Abu Bakar') || p.Halaqah_Binaan.includes('Khadijah') || p.Halaqah_Binaan.includes('Umar Bin') || p.Halaqah_Binaan.includes('Aisyah Binti'))) {
-        needsUpdate = true;
-        return { ...p, Halaqah_Binaan: initP.Halaqah_Binaan };
-      }
-      return p;
-    });
-    if (needsUpdate) {
-      setPengajarList(updated);
-    }
-  }, []);
   const [tahfidzList, setTahfidzList] = usePersistedState<TahfidzRecord[]>('TAHFIDZ', INITIAL_TAHFIDZ);
   const [tahsinList, setTahsinList] = usePersistedState<TahsinRecord[]>('TAHSIN', INITIAL_TAHSIN);
   const [kebersihanList, setKebersihanList] = usePersistedState<KebersihanKesehatanRecord[]>('KEBERSIHAN', INITIAL_KEBERSIHAN);
   const [absensiList, setAbsensiList] = usePersistedState<AbsensiRecord[]>('ABSENSI', INITIAL_ABSENSI);
 
-  // Sync Absensi halaqah & santri names
+  // Sync Absensi santri names only when santri is renamed
   useEffect(() => {
     if (!absensiList || absensiList.length === 0 || !santriList || santriList.length === 0) return;
     const santriMap = new Map(santriList.map(s => [s.NIS, s]));
     let needsUpdate = false;
     const updated = absensiList.map(a => {
       const s = santriMap.get(a.NIS);
-      let changed = false;
-      let newName = a.namaSantri;
-      let newHalaqah = a.halaqah;
-
       if (s && s.Nama_Lengkap !== a.namaSantri) {
-        newName = s.Nama_Lengkap;
-        changed = true;
-      }
-      if (a.halaqah !== 'Semua Halaqoh') {
-        newHalaqah = 'Semua Halaqoh';
-        changed = true;
-      }
-
-      if (changed) {
         needsUpdate = true;
-        return { ...a, namaSantri: newName, halaqah: newHalaqah };
+        return { ...a, namaSantri: s.Nama_Lengkap };
       }
       return a;
     });
@@ -813,112 +727,66 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  // Auto-synchronize Tahfidz and Tahsin records to cover all 65 santri and sync Pembimbing
+  // Sync Diniyyah names with santriList
+  useEffect(() => {
+    if (!diniyyahList || diniyyahList.length === 0 || !santriList || santriList.length === 0) return;
+    const santriMap = new Map(santriList.map(s => [s.NIS, s]));
+    let needsUpdate = false;
+    const updated = diniyyahList.map(d => {
+      const s = santriMap.get(d.NIS);
+      if (s && s.Nama_Lengkap !== d.namaSantri) {
+        needsUpdate = true;
+        return { ...d, namaSantri: s.Nama_Lengkap };
+      }
+      return d;
+    });
+    if (needsUpdate) {
+      setDiniyyahList(updated);
+    }
+  }, [santriList]);
+
+  // Sync Tahfidz and Tahsin names when santri is renamed
   useEffect(() => {
     if (!santriList || santriList.length === 0) return;
 
-    // Ensure Diniyyah records are populated and synced with official distribution
-    setDiniyyahList(prev => {
-      if (!prev || prev.length === 0) {
-        return INITIAL_DINIYYAH_DATA;
-      }
-      
-      let changed = false;
-      const updated = prev.map(rec => {
-        const expectedJenjang = mapSantriToJenjang(rec.NIS, rec.namaSantri);
-        if (rec.jenjang !== expectedJenjang) {
-          const config = DINIYYAH_CONFIG[expectedJenjang];
-          const newNilaiList = config.mataPelajaran.map((m, mIdx) => {
-            const oldScore = rec.nilaiList[mIdx]?.nilai ?? 82;
-            return { mapel: m, nilai: oldScore };
-          });
-          const calc = calculateDiniyyah(newNilaiList);
-          changed = true;
-          return {
-            ...rec,
-            jenjang: expectedJenjang,
-            guruPembimbing: config.guruPembimbing,
-            nilaiList: newNilaiList,
-            jumlahNilai: calc.jumlahNilai,
-            rataRata: calc.rataRata,
-            predikat: calc.predikat
-          };
-        }
-        return rec;
-      });
-
-      return changed ? updated : prev;
-    });
-    
     setTahfidzList(prev => {
-      const cleaned = prev ? prev.filter(t => !t.id.startsWith('TF_ADV_')) : [];
-      if (!cleaned || cleaned.length !== INITIAL_TAHFIDZ.length) {
-        return INITIAL_TAHFIDZ;
-      }
-      const initialTahfidzMap = new Map(INITIAL_TAHFIDZ.map(t => [t.NIS, t]));
-      const santriMap = new Map(santriList.map(s => [s.NIS, s.Pembimbing || s.Ustadz_Pembimbing]));
+      if (!prev || prev.length === 0) return prev;
+      const santriMap = new Map(santriList.map(s => [s.NIS, s]));
       let changed = false;
-      const synced = cleaned.map(t => {
-        const initT = initialTahfidzMap.get(t.NIS);
-        const pembimbing = santriMap.get(t.NIS) || (initT ? initT.Pengajar : t.Pengajar);
-        if (initT && (t.Juz !== initT.Juz || t.Surah !== initT.Surah || t.Ayat !== initT.Ayat || t.Pengajar !== pembimbing || t.Catatan !== initT.Catatan)) {
+      const updated = prev.map(t => {
+        const s = santriMap.get(t.NIS);
+        if (s && s.Nama_Lengkap !== t.Nama_Santri) {
           changed = true;
-          return {
-            ...t,
-            Juz: initT.Juz,
-            Surah: initT.Surah,
-            Ayat: initT.Ayat,
-            Kelancaran_Score: initT.Kelancaran_Score,
-            Tajwid_Score: initT.Tajwid_Score,
-            Fashahah_Score: initT.Fashahah_Score,
-            Nilai_Rata: initT.Nilai_Rata,
-            Status_Lulus: initT.Status_Lulus,
-            Pengajar: pembimbing,
-            Catatan: initT.Catatan
-          };
+          return { ...t, Nama_Santri: s.Nama_Lengkap };
         }
         return t;
       });
-      return changed ? synced : (cleaned.length !== (prev ? prev.length : 0) ? cleaned : prev);
+      return changed ? updated : prev;
     });
 
     setTahsinList(prev => {
-      const cleaned = prev ? prev.filter(t => !t.id.startsWith('TS_ADV_')) : [];
-      if (!cleaned || cleaned.length !== INITIAL_TAHSIN.length) {
-        return INITIAL_TAHSIN;
-      }
-      const initialTahsinMap = new Map(INITIAL_TAHSIN.map(t => [t.NIS, t]));
-      const santriMap = new Map(santriList.map(s => [s.NIS, s.Pembimbing || s.Ustadz_Pembimbing]));
+      if (!prev || prev.length === 0) return prev;
+      const santriMap = new Map(santriList.map(s => [s.NIS, s]));
       let changed = false;
-      const synced = cleaned.map(t => {
-        const initT = initialTahsinMap.get(t.NIS);
-        const pembimbing = santriMap.get(t.NIS) || (initT ? initT.Pengajar : t.Pengajar);
-        if (initT && (t.Jilid_Iqra !== initT.Jilid_Iqra || t.Halaman !== initT.Halaman || t.Pengajar !== pembimbing || t.Catatan !== initT.Catatan)) {
+      const updated = prev.map(t => {
+        const s = santriMap.get(t.NIS);
+        if (s && s.Nama_Lengkap !== t.Nama_Santri) {
           changed = true;
-          return {
-            ...t,
-            Jilid_Iqra: initT.Jilid_Iqra,
-            Halaman: initT.Halaman,
-            Makhraj_Score: initT.Makhraj_Score,
-            Tajwid_Score: initT.Tajwid_Score,
-            Status_Naik: initT.Status_Naik,
-            Catatan: initT.Catatan,
-            Pengajar: pembimbing
-          };
+          return { ...t, Nama_Santri: s.Nama_Lengkap };
         }
         return t;
       });
-      return changed ? synced : (cleaned.length !== (prev ? prev.length : 0) ? cleaned : prev);
+      return changed ? updated : prev;
     });
   }, [santriList]);
 
-  // Auto-synchronize Asatidz (Pengajar/Super Admin) and Wali Santri accounts
+  // Ensure default system accounts exist without overwriting changes made by Admin
   useEffect(() => {
     setUsersList(prevUsers => {
       let hasChanges = false;
       const existing = [...prevUsers];
 
-      // Ensure all INITIAL_USERS exist in usersList
+      // Ensure all INITIAL_USERS exist in usersList without overwriting customized fields
       INITIAL_USERS.forEach(initUser => {
         const foundIdx = existing.findIndex(u => 
           u.id === initUser.id || 
@@ -929,25 +797,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (foundIdx === -1) {
           existing.push(initUser);
           hasChanges = true;
-        } else {
-          const current = existing[foundIdx];
-          if (
-            current.username !== initUser.username || 
-            current.nama !== initUser.nama || 
-            current.role !== initUser.role ||
-            current.password !== initUser.password
-          ) {
-            existing[foundIdx] = {
-              ...current,
-              username: initUser.username,
-              nama: initUser.nama,
-              role: initUser.role,
-              password: initUser.password || 'rtq_pro',
-              email: initUser.email || current.email,
-              avatarUrl: initUser.avatarUrl || current.avatarUrl
-            };
-            hasChanges = true;
-          }
         }
       });
 
@@ -1785,6 +1634,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Pembayaran SPP ${spp.Bulan} berhasil dicatat. No: ${spp.Nomor_Kwitansi}`, 'success');
   };
 
+  const updateSPP = (id: string, data: Partial<AdministrasiSPP>): { success: boolean; message: string } => {
+    setSppList(prev => prev.map(s => s.id === id ? { ...s, ...data } : s));
+    showToast('Data pembayaran SPP / Infaq berhasil diperbarui!', 'success');
+    return { success: true, message: 'Data SPP berhasil diperbarui' };
+  };
+
+  const deleteSPP = (id: string): { success: boolean; message: string } => {
+    setSppList(prev => prev.filter(s => s.id !== id));
+    showToast('Transaksi pembayaran SPP / Infaq berhasil dihapus.', 'warning');
+    return { success: true, message: 'Transaksi SPP dihapus' };
+  };
+
+  const clearAllSPP = (): { success: boolean; message: string } => {
+    setSppList([]);
+    showToast('Semua riwayat transaksi pembayaran SPP berhasil dikosongkan.', 'success');
+    return { success: true, message: 'Semua transaksi SPP telah dikosongkan.' };
+  };
+
   const addJadwal = (jadwal: JadwalKegiatan) => {
     setJadwalList(prev => [...prev, jadwal]);
     showToast('Jadwal kegiatan berhasil ditambahkan!', 'success');
@@ -2381,6 +2248,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addPelanggaran,
         updatePelanggaran,
         addSPP,
+        updateSPP,
+        deleteSPP,
+        clearAllSPP,
         addSanguTransaksi,
         addBulkSanguTransaksi,
         updateSanguTransaksi,

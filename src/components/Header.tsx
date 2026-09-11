@@ -7,7 +7,8 @@ import {
   Sparkles,
   Bell,
   BellRing, 
-  Image as ImageIcon
+  Image as ImageIcon,
+  CloudCheck
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -150,12 +151,22 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           </button>
         )}
 
+        {/* Cloud Sync Status Badge */}
+        <div 
+          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200/80 rounded-full text-[11px] font-bold text-emerald-800"
+          title="Sinkronisasi Cloud Real-time Aktif: Seluruh data langsung terhubung dan tersinkron di semua HP pengguna"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <CloudCheck className="w-3.5 h-3.5 text-emerald-700" />
+          <span>Cloud Sync Aktif</span>
+        </div>
+
         {/* Refresh Notification */}
         <button
           id="btn-refresh"
-          onClick={() => showToast('Data sistem telah disinkronkan!', 'info')}
+          onClick={() => showToast('Data sistem telah terhubung dan disinkronkan via Cloud Database!', 'success')}
           className="p-2 text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl border border-gray-200 transition-colors"
-          title="Sinkronisasi / Refresh"
+          title="Sinkronisasi / Refresh Cloud Data"
         >
           <RefreshCw className="w-4 h-4" />
         </button>

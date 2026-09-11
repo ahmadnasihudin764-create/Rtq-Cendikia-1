@@ -1347,23 +1347,33 @@ export const WaliSantriPortalView: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {santriSpp.map((s) => (
-                    <tr key={s.id} className="hover:bg-gray-50">
-                      <td className="p-3 font-bold text-gray-900">{s.Bulan}</td>
-                      <td className="p-3 text-gray-600">{s.Tahun}</td>
-                      <td className="p-3 font-semibold text-emerald-700">Rp {s.Jumlah_Bayar.toLocaleString('id-ID')}</td>
-                      <td className="p-3 text-gray-700">{s.Metode}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          s.Status_Bayar === 'Lunas' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {s.Status_Bayar}
-                        </span>
+                  {santriSpp.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-8 text-center bg-gray-50/50">
+                        <CreditCard className="w-8 h-8 text-teal-400 mx-auto mb-1.5 opacity-60" />
+                        <p className="text-xs font-bold text-gray-700">Belum ada riwayat pembayaran SPP / Infaq yang tercatat</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">Konfirmasi pembayaran dapat dilakukan ke kontak bendahara melalui tombol di atas.</p>
                       </td>
-                      <td className="p-3 font-mono text-gray-500 text-[11px]">{s.Nomor_Kwitansi}</td>
-                      <td className="p-3 text-gray-600">{s.Petugas}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    santriSpp.map((s) => (
+                      <tr key={s.id} className="hover:bg-gray-50">
+                        <td className="p-3 font-bold text-gray-900">{s.Bulan}</td>
+                        <td className="p-3 text-gray-600">{s.Tahun}</td>
+                        <td className="p-3 font-semibold text-emerald-700">Rp {s.Jumlah_Bayar.toLocaleString('id-ID')}</td>
+                        <td className="p-3 text-gray-700">{s.Metode}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            s.Status_Bayar === 'Lunas' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {s.Status_Bayar}
+                          </span>
+                        </td>
+                        <td className="p-3 font-mono text-gray-500 text-[11px]">{s.Nomor_Kwitansi}</td>
+                        <td className="p-3 text-gray-600">{s.Petugas}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

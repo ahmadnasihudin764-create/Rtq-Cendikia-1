@@ -37,7 +37,7 @@ jobs:
 
       # 5. Install dependencies
       - name: Install Node Dependencies
-        run: npm ci
+        run: npm ci || npm install
 
       # 6. Build web
       - name: Build Web Production Assets
@@ -51,21 +51,26 @@ jobs:
       - name: Make Gradle Executable
         run: chmod +x android/gradlew
 
-      # 9. Build Debug APK
-      - name: Build Debug APK
+      # 9. Build Debug and Release APK
+      - name: Build APKs
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug assembleRelease
 
-      # 10. Rename APK agar mudah dikenali
-      - name: Rename APK
+      # 10. Persiapkan file APK siap instal
+      - name: Organize APK Output
         run: |
           mkdir -p apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk/app-debug-installable.apk
+          if [ -f "android/app/build/outputs/apk/debug/app-debug.apk" ]; then
+            cp android/app/build/outputs/apk/debug/app-debug.apk apk/RTQ-Cendekia-Debug-Installable.apk
+          fi
+          if [ -f "android/app/build/outputs/apk/release/app-release.apk" ]; then
+            cp android/app/build/outputs/apk/release/app-release.apk apk/RTQ-Cendekia-Release-Signed.apk
+          fi
 
-      # 11. Upload APK
-      - name: Upload Installable APK
+      # 11. Upload APK Artifact
+      - name: Upload Installable APKs
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk-installable
-          path: apk/app-debug-installable.apk
+          name: rtq-cendekia-apk-installable
+          path: apk/*.apk
           retention-days: 30

@@ -1341,58 +1341,7 @@ export const INITIAL_PELANGGARAN: PelanggaranRecord[] = [
   }
 ];
 
-export const INITIAL_SPP: AdministrasiSPP[] = [
-  {
-    id: 'SPP001',
-    Tanggal_Bayar: '2026-08-05',
-    NIS: 'STR001',
-    Bulan: 'Agustus',
-    Tahun: '2026',
-    Jumlah_Bayar: 150000,
-    Metode: 'QRIS BAZNAS',
-    Status_Bayar: 'Lunas',
-    Nomor_Kwitansi: 'KW/RTQ/2026/08/001',
-    Petugas: 'Ustadzah Siti Fatimah, S.E.',
-    Catatan: 'Infaq SPP Reguler'
-  },
-  {
-    id: 'SPP002',
-    Tanggal_Bayar: '2026-08-06',
-    NIS: 'STR002',
-    Bulan: 'Agustus',
-    Tahun: '2026',
-    Jumlah_Bayar: 150000,
-    Metode: 'Transfer Bank',
-    Status_Bayar: 'Lunas',
-    Nomor_Kwitansi: 'KW/RTQ/2026/08/002',
-    Petugas: 'Ustadzah Siti Fatimah, S.E.'
-  },
-  {
-    id: 'SPP003',
-    Tanggal_Bayar: '2026-08-01',
-    NIS: 'STR003',
-    Bulan: 'Agustus',
-    Tahun: '2026',
-    Jumlah_Bayar: 0,
-    Metode: 'QRIS BAZNAS',
-    Status_Bayar: 'Beasiswa BAZNAS',
-    Nomor_Kwitansi: 'BSW/BAZNAS/2026/08/001',
-    Petugas: 'Ustadzah Siti Fatimah, S.E.',
-    Catatan: 'Program Beasiswa Santri Berprestasi BAZNAS 100%'
-  },
-  {
-    id: 'SPP004',
-    Tanggal_Bayar: '2026-08-10',
-    NIS: 'STR004',
-    Bulan: 'Agustus',
-    Tahun: '2026',
-    Jumlah_Bayar: 150000,
-    Metode: 'Tunai',
-    Status_Bayar: 'Lunas',
-    Nomor_Kwitansi: 'KW/RTQ/2026/08/003',
-    Petugas: 'Ustadzah Siti Fatimah, S.E.'
-  }
-];
+export const INITIAL_SPP: AdministrasiSPP[] = [];
 
 export const INITIAL_JADWAL: JadwalKegiatan[] = [];
 

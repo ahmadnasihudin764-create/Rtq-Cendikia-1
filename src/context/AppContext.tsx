@@ -767,6 +767,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   }, []);
 
+  // Auto clean mock SPP transactions to ensure initial saldo / kas SPP is Rp 0
+  useEffect(() => {
+    setSppList(prev => {
+      if (!prev || prev.length === 0) return prev;
+      const cleaned = prev.filter(s => !s.id.startsWith('SPP00') && !['SPP001', 'SPP002', 'SPP003', 'SPP004'].includes(s.id));
+      if (cleaned.length !== prev.length) {
+        return cleaned;
+      }
+      return prev;
+    });
+  }, []);
+
   const unreadNotificationsCount = notifications.filter(n => !n.dibaca).length;
 
   const markNotificationAsRead = (id: string) => {

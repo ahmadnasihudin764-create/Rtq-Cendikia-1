@@ -262,54 +262,64 @@ export const AdministrasiView: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {sppList.map(s => {
-                const santri = santriList.find(st => st.NIS === s.NIS);
-                const isLunas = s.Status_Bayar === 'Lunas';
-                const isBeasiswa = s.Status_Bayar === 'Beasiswa BAZNAS';
+              {sppList.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center bg-gray-50/50">
+                    <Receipt className="w-9 h-9 text-gray-400 mx-auto mb-2 opacity-60" />
+                    <p className="text-xs font-bold text-gray-700">Belum ada transaksi pembayaran SPP / Infaq yang tercatat</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">Saldo awal infaq Rp 0. Klik tombol "Input Transaksi Infaq / SPP" untuk menambahkan data baru.</p>
+                  </td>
+                </tr>
+              ) : (
+                sppList.map(s => {
+                  const santri = santriList.find(st => st.NIS === s.NIS);
+                  const isLunas = s.Status_Bayar === 'Lunas';
+                  const isBeasiswa = s.Status_Bayar === 'Beasiswa BAZNAS';
 
-                return (
-                  <tr key={s.id} className="hover:bg-gray-50/80 transition">
-                    <td className="p-3.5">
-                      <span className="font-mono font-bold text-gray-900 block">{s.Nomor_Kwitansi}</span>
-                      <span className="text-[10px] text-gray-400">{s.Tanggal_Bayar}</span>
-                    </td>
-                    <td className="p-3.5">
-                      <span className="font-bold text-gray-900 block">{santri?.Nama_Lengkap || s.NIS}</span>
-                      <span className="text-[10px] text-emerald-700 font-mono font-semibold">{s.NIS}</span>
-                    </td>
-                    <td className="p-3.5 font-semibold text-gray-800">{s.Bulan} {s.Tahun}</td>
-                    <td className="p-3.5">
-                      <span className="font-semibold text-gray-800 block">{s.Metode}</span>
-                      <span className="text-[10px] text-gray-400">{s.Catatan || '-'}</span>
-                    </td>
-                    <td className="p-3.5 font-bold text-gray-900">
-                      {isBeasiswa ? (
-                        <span className="text-emerald-700 font-bold">GRATIS (BAZNAS)</span>
-                      ) : (
-                        `Rp ${s.Jumlah_Bayar.toLocaleString('id-ID')}`
-                      )}
-                    </td>
-                    <td className="p-3.5">
-                      <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full ${
-                        isLunas 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : (isBeasiswa ? 'bg-teal-100 text-teal-800 font-bold' : 'bg-rose-100 text-rose-800')
-                      }`}>
-                        {s.Status_Bayar}
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-center">
-                      <button
-                        onClick={() => setSelectedReceipt(s)}
-                        className="px-3 py-1 bg-gray-100 hover:bg-emerald-50 hover:text-emerald-800 text-gray-700 font-bold rounded-xl transition text-[11px] inline-flex items-center gap-1"
-                      >
-                        <Receipt className="w-3.5 h-3.5" />
-                        <span>Kwitansi</span>
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={s.id} className="hover:bg-gray-50/80 transition">
+                      <td className="p-3.5">
+                        <span className="font-mono font-bold text-gray-900 block">{s.Nomor_Kwitansi}</span>
+                        <span className="text-[10px] text-gray-400">{s.Tanggal_Bayar}</span>
+                      </td>
+                      <td className="p-3.5">
+                        <span className="font-bold text-gray-900 block">{santri?.Nama_Lengkap || s.NIS}</span>
+                        <span className="text-[10px] text-emerald-700 font-mono font-semibold">{s.NIS}</span>
+                      </td>
+                      <td className="p-3.5 font-semibold text-gray-800">{s.Bulan} {s.Tahun}</td>
+                      <td className="p-3.5">
+                        <span className="font-semibold text-gray-800 block">{s.Metode}</span>
+                        <span className="text-[10px] text-gray-400">{s.Catatan || '-'}</span>
+                      </td>
+                      <td className="p-3.5 font-bold text-gray-900">
+                        {isBeasiswa ? (
+                          <span className="text-emerald-700 font-bold">GRATIS (BAZNAS)</span>
+                        ) : (
+                          `Rp ${s.Jumlah_Bayar.toLocaleString('id-ID')}`
+                        )}
+                      </td>
+                      <td className="p-3.5">
+                        <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full ${
+                          isLunas 
+                            ? 'bg-emerald-100 text-emerald-800' 
+                            : (isBeasiswa ? 'bg-teal-100 text-teal-800 font-bold' : 'bg-rose-100 text-rose-800')
+                        }`}>
+                          {s.Status_Bayar}
+                        </span>
+                      </td>
+                      <td className="p-3.5 text-center">
+                        <button
+                          onClick={() => setSelectedReceipt(s)}
+                          className="px-3 py-1 bg-gray-100 hover:bg-emerald-50 hover:text-emerald-800 text-gray-700 font-bold rounded-xl transition text-[11px] inline-flex items-center gap-1"
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                          <span>Kwitansi</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

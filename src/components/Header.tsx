@@ -151,14 +151,15 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu }) => {
           </button>
         )}
 
-        {/* Cloud Sync Status Badge */}
+        {/* Real-time onSnapshot Cloud Sync Status Badge */}
         <div 
-          className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200/80 rounded-full text-[11px] font-bold text-emerald-800"
-          title="Sinkronisasi Cloud Real-time Aktif: Seluruh data langsung terhubung dan tersinkron di semua HP pengguna"
+          className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200/80 rounded-full text-[11px] font-bold text-emerald-800 shadow-2xs"
+          title="Sinkronisasi Real-Time Firestore onSnapshot Aktif: Seluruh update oleh Admin & Wali Santri otomatis terupdate seketika di semua perangkat"
         >
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <CloudCheck className="w-3.5 h-3.5 text-emerald-700" />
-          <span>Cloud Sync Aktif</span>
+          <CloudCheck className="w-3.5 h-3.5 text-emerald-700 hidden sm:inline" />
+          <span className="hidden sm:inline">Real-time onSnapshot Aktif</span>
+          <span className="sm:hidden text-[10px]">Real-Time</span>
         </div>
 
         {/* Refresh Notification */}

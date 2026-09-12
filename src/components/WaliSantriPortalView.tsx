@@ -320,9 +320,15 @@ export const WaliSantriPortalView: React.FC = () => {
 
             {/* Child Basic Info */}
             <div className="space-y-1">
-              <div className="inline-flex items-center space-x-2 px-2.5 py-0.5 bg-emerald-700/60 rounded-md text-[11px] text-emerald-200 border border-emerald-600/60">
-                <GraduationCap className="w-3.5 h-3.5 text-yellow-300" />
-                <span>Portal Resmi Wali Santri</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center space-x-2 px-2.5 py-0.5 bg-emerald-700/60 rounded-md text-[11px] text-emerald-200 border border-emerald-600/60">
+                  <GraduationCap className="w-3.5 h-3.5 text-yellow-300" />
+                  <span>Portal Resmi Wali Santri</span>
+                </div>
+                <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-950/60 rounded-md text-[10px] text-emerald-300 border border-emerald-500/40">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Live onSnapshot Aktif</span>
+                </div>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                 {santri.Nama_Lengkap}

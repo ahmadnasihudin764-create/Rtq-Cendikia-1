@@ -227,8 +227,14 @@ export const AdministrasiView: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-gray-900">Administrasi, Infaq & Beasiswa BAZNAS</h3>
-          <p className="text-xs text-gray-500">Pencatatan, pengeditan, dan penghapusan transaksi infaq bulanan santri & kwitansi resmi</p>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-gray-900">Administrasi, Infaq & Beasiswa BAZNAS</h3>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Firestore onSnapshot Aktif</span>
+            </span>
+          </div>
+          <p className="text-xs text-gray-500">Pencatatan real-time multi-device: data otomatis sinkron instan tanpa perlu refresh halaman</p>
         </div>
         <div className="flex items-center gap-2">
           {sppList.length > 0 && (
